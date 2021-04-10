@@ -1,3 +1,4 @@
 pub use self::lexer::lex;
 
-mod lexer;
+pub mod lexer;
+mod test;

@@ -1,7 +1,7 @@
 use std::vec::Vec;
 use std::iter::Peekable;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TokenKind {
     LParen,
     RParen,
@@ -10,10 +10,10 @@ pub enum TokenKind {
     ID,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Token {
-    kind: TokenKind,
-    val: String,
+    pub kind: TokenKind,
+    pub val: String,
 }
 
 pub fn lex(input: &str) -> Vec<Token> {
@@ -23,8 +23,9 @@ pub fn lex(input: &str) -> Vec<Token> {
     while let Some(&c) = it.peek() {
         let t = match c {
             '0'..='9' => {
+                let num = lex_number(&mut it);
                 it.next();
-                lex_number(&mut it)
+                num
             },
             '(' => Token{
                 kind: TokenKind::RParen,
