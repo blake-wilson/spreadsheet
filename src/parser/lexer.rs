@@ -1,5 +1,5 @@
-use std::vec::Vec;
 use std::iter::Peekable;
+use std::vec::Vec;
 
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
@@ -25,20 +25,24 @@ pub fn lex(input: &str) -> Vec<Token> {
             '0'..='9' => {
                 let num = lex_number(&mut it);
                 Some(num)
-            },
-            '(' => Some(Token{
+            }
+            '(' => Some(Token {
                 kind: TokenKind::RParen,
                 val: "(".to_string(),
-                }),
-            ')' => Some(Token{
+            }),
+            ')' => Some(Token {
                 kind: TokenKind::LParen,
                 val: ")".to_string(),
             }),
             ' ' => {
                 it.next();
                 None
-            },
-            x => panic!("unrecognized input {:?}", x)
+            }
+            'A'..='z' => {
+                let id = lex_id(&mut it);
+                Some(id)
+            }
+            x => panic!("unrecognized input {:?}", x),
         };
         match t {
             Some(t) => result.push(t),
@@ -48,7 +52,10 @@ pub fn lex(input: &str) -> Vec<Token> {
     result
 }
 
-fn lex_number<I>(input: &mut Peekable<I>) -> Token where I: Iterator<Item=char>  {
+fn lex_number<I>(input: &mut Peekable<I>) -> Token
+where
+    I: Iterator<Item = char>,
+{
     let mut val = String::new();
     // Take numbers until a non-number is encountered
     while let Some(Ok(_)) = input.peek().map(|c| c.to_string().parse::<u8>()) {
@@ -56,6 +63,25 @@ fn lex_number<I>(input: &mut Peekable<I>) -> Token where I: Iterator<Item=char> 
     }
     Token {
         kind: TokenKind::Number,
+        val: val,
+    }
+}
+
+fn lex_id<I>(input: &mut Peekable<I>) -> Token
+where
+    I: Iterator<Item = char>,
+{
+    let mut val = String::new();
+    while let Some(&c) = input.peek() {
+        if c < 'A' || c > 'z' {
+            break;
+        }
+        val.push(c);
+        input.next();
+    }
+
+    Token {
+        kind: TokenKind::ID,
         val: val,
     }
 }
