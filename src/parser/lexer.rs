@@ -24,20 +24,26 @@ pub fn lex(input: &str) -> Vec<Token> {
         let t = match c {
             '0'..='9' => {
                 let num = lex_number(&mut it);
-                it.next();
-                num
+                Some(num)
             },
-            '(' => Token{
+            '(' => Some(Token{
                 kind: TokenKind::RParen,
                 val: "(".to_string(),
-                },
-            ')' => Token{
+                }),
+            ')' => Some(Token{
                 kind: TokenKind::LParen,
                 val: ")".to_string(),
+            }),
+            ' ' => {
+                it.next();
+                None
             },
             x => panic!("unrecognized input {:?}", x)
         };
-        result.push(t);
+        match t {
+            Some(t) => result.push(t),
+            _ => {}
+        }
     }
     result
 }
@@ -45,9 +51,8 @@ pub fn lex(input: &str) -> Vec<Token> {
 fn lex_number<I>(input: &mut Peekable<I>) -> Token where I: Iterator<Item=char>  {
     let mut val = String::new();
     // Take numbers until a non-number is encountered
-    while let Some(Ok(digit)) = input.peek().map(|c| c.to_string().parse::<char>()) {
-        val.push(digit);
-        input.next();
+    while let Some(Ok(_)) = input.peek().map(|c| c.to_string().parse::<u8>()) {
+        val.push(input.next().unwrap());
     }
     Token {
         kind: TokenKind::Number,
