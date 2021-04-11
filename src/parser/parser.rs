@@ -5,6 +5,7 @@ use std::iter::Peekable;
 pub enum Operator {
     Add,
     Subtract,
+    Multiply,
 }
 
 #[derive(Debug, PartialEq)]
@@ -99,6 +100,7 @@ pub fn get_operator(val: &str) -> Operator {
     match val {
         "+" => Operator::Add,
         "-" => Operator::Subtract,
+        "*" => Operator::Multiply,
         x => panic!("unrecognized operator {:?}", x),
     }
 }

@@ -1,5 +1,7 @@
 mod parser;
 
 fn main() {
-    println!("{:?}", parser::lex("((("));
+    let mut tokens = parser::lex("CALL(10 * 3, CALLB(100, 200))");
+    let tree = parser::parse(&mut tokens);
+    println!("tree: {:?}", tree);
 }

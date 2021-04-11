@@ -27,17 +27,37 @@ pub fn lex(input: &str) -> Vec<Token> {
                 let num = lex_number(&mut it);
                 Some(num)
             }
-            '(' => Some(Token {
-                kind: TokenKind::RParen,
-                val: "(".to_string(),
-            }),
-            ')' => Some(Token {
-                kind: TokenKind::LParen,
-                val: ")".to_string(),
-            }),
+            '(' => {
+                it.next();
+                Some(Token {
+                    kind: TokenKind::LParen,
+                    val: "(".to_string(),
+                })
+            }
+            ')' => {
+                it.next();
+                Some(Token {
+                    kind: TokenKind::RParen,
+                    val: ")".to_string(),
+                })
+            }
             ' ' => {
                 it.next();
                 None
+            }
+            ',' => {
+                it.next();
+                Some(Token {
+                    kind: TokenKind::Comma,
+                    val: c.to_string(),
+                })
+            }
+            '*' | '+' => {
+                it.next();
+                Some(Token {
+                    kind: TokenKind::BinaryExpr,
+                    val: c.to_string(),
+                })
             }
             'A'..='z' => {
                 let id = lex_id(&mut it);
