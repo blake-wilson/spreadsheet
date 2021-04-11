@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     pub use super::super::lexer::*;
+    pub use super::super::parser::*;
 
     #[test]
     fn test_parse_number() {
@@ -53,5 +54,87 @@ mod tests {
             },
             tokens.get(0).unwrap()
         );
+    }
+
+    #[test]
+    fn test_parse() {
+        let tokens = &mut vec![
+            Token {
+                kind: TokenKind::Number,
+                val: "30".to_string(),
+            },
+            Token {
+                kind: TokenKind::BinaryExpr,
+                val: "+".to_string(),
+            },
+            Token {
+                kind: TokenKind::Number,
+                val: "40".to_string(),
+            },
+        ];
+        let node = parse(tokens);
+
+        assert_eq!(
+            node,
+            ASTNode::BinaryExpr {
+                op: Operator::Add,
+                lhs: Box::new(ASTNode::Number(30f64)),
+                rhs: Box::new(ASTNode::Number(40f64)),
+            }
+        )
+    }
+
+    #[test]
+    fn test_parse_function() {
+        let tokens = &mut vec![
+            Token {
+                kind: TokenKind::ID,
+                val: "ABC".to_string(),
+            },
+            Token {
+                kind: TokenKind::LParen,
+                val: "(".to_string(),
+            },
+            Token {
+                kind: TokenKind::Number,
+                val: "20".to_string(),
+            },
+            Token {
+                kind: TokenKind::BinaryExpr,
+                val: "+".to_string(),
+            },
+            Token {
+                kind: TokenKind::Number,
+                val: "40".to_string(),
+            },
+            Token {
+                kind: TokenKind::Comma,
+                val: ",".to_string(),
+            },
+            Token {
+                kind: TokenKind::Number,
+                val: "60".to_string(),
+            },
+            Token {
+                kind: TokenKind::RParen,
+                val: ")".to_string(),
+            },
+        ];
+        let node = parse(tokens);
+
+        assert_eq!(
+            node,
+            ASTNode::Function {
+                name: "ABC".to_string(),
+                args: vec![
+                    Box::new(ASTNode::BinaryExpr {
+                        op: Operator::Add,
+                        lhs: Box::new(ASTNode::Number(20f64)),
+                        rhs: Box::new(ASTNode::Number(40f64)),
+                    }),
+                    Box::new(ASTNode::Number(60f64)),
+                ],
+            }
+        )
     }
 }

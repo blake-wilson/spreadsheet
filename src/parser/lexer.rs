@@ -1,16 +1,17 @@
 use std::iter::Peekable;
 use std::vec::Vec;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TokenKind {
     LParen,
     RParen,
     Number,
+    BinaryExpr,
     Comma,
     ID,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
     pub val: String,
