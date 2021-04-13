@@ -20,6 +20,8 @@ pkgs.mkShell {
             cmake
             rustNightlyChannel
             rustup
+            zlib
     ];
     RUST_SRC_PATH = "${rustNightlyChannel}/lib/rustlib/src/rust/library";
+    hardeningDisable = ["fortify" ];
 }
