@@ -1,12 +1,15 @@
 mod models;
 mod parser;
 
-use proto::grpc::SpreadsheetApi;
+#[path = "proto/grpc/api.rs"]
+mod api;
+#[path = "proto/grpc/api_grpc.rs"]
+mod api_grpc;
 
 #[derive(Clone)]
 struct SpreadsheetService;
 
-impl SpreadsheetAPI for SpreadsheetService {}
+// impl api::SpreadsheetApi for SpreadsheetService {}
 
 fn main() {
     let mut tokens = parser::lex("CALL(10 * 3, CALLB(100, 200))");

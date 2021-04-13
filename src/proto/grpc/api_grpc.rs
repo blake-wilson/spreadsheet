@@ -5,8 +5,6 @@
 #![allow(unknown_lints)]
 #![allow(clippy::all)]
 
-#![cfg_attr(rustfmt, rustfmt_skip)]
-
 #![allow(box_pointers)]
 #![allow(dead_code)]
 #![allow(missing_docs)]
@@ -52,7 +50,7 @@ impl SpreadsheetApiClient {
     pub fn insert_cells_async(&self, req: &super::api::InsertCellsRequest) -> ::grpcio::Result<::grpcio::ClientUnaryReceiver<super::api::InsertCellsResponse>> {
         self.insert_cells_async_opt(req, ::grpcio::CallOption::default())
     }
-    pub fn spawn<F>(&self, f: F) where F: ::futures::Future<Item = (), Error = ()> + Send + 'static {
+    pub fn spawn<F>(&self, f: F) where F: ::futures::Future<Output = ()> + Send + 'static {
         self.client.spawn(f)
     }
 }

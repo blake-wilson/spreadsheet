@@ -7,8 +7,11 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-grpcio = {  version = "0.8.0", default-features = false }
+grpcio-sys = { version = "0.8.1" }
+grpcio = {  version = "0.8.2" }
+futures = "0.3.14"
+protobuf = { version = "2.22.1" }
 
 
 [build-dependencies]
-protoc-grpcio = "1.0.2"
+protoc-grpcio = "3.0.0"
