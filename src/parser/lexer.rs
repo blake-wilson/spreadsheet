@@ -84,7 +84,7 @@ where
     }
     Token {
         kind: TokenKind::Number,
-        val: val,
+        val,
     }
 }
 
@@ -103,6 +103,6 @@ where
 
     Token {
         kind: TokenKind::ID,
-        val: val,
+        val,
     }
 }

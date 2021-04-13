@@ -1,5 +1,4 @@
 use super::lexer::*;
-use std::iter::Peekable;
 
 #[derive(Debug, PartialEq)]
 pub enum Operator {
@@ -80,7 +79,7 @@ pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> ASTNode {
 
     ASTNode::Function {
         name: curr.val.clone(),
-        args: args,
+        args,
     }
 }
 
