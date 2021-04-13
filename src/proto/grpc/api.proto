@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package spreadsheet;
+
+service SpreadsheetAPI {
+    rpc InsertCells(InsertCellsRequest) returns (InsertCellsResponse);
+}
+
+message InsertCell {
+    int32 row = 1;
+    int32 col = 2;
+    string value = 3;
+}
+
+message InsertCellsRequest {
+    repeated InsertCell cells = 1;
+}
+
+message InsertCellsResponse {
+    int32 numInserted = 1;
+}

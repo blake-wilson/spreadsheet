@@ -12,6 +12,7 @@ pkgs.mkShell {
     name = "moz_overlay_shell";
     buildInputs = [
         pkgs.cargo
+        buildPackages.protobuf
             rustc
             rustfmt
             openssl
