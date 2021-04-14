@@ -2,7 +2,8 @@ mod models;
 mod parser;
 
 use futures::prelude::*;
-use grpcio::{RpcContext, UnarySink};
+use grpcio::{ChannelBuilder, Environment, ResourceQuota, RpcContext, ServerBuilder, UnarySink};
+use std::sync::Arc;
 
 #[path = "proto/grpc/api.rs"]
 mod api;
@@ -47,4 +48,20 @@ fn main() {
         value: "10".to_string(),
     };
     println!("cell: {:?}", c);
+
+    let env = Arc::new(Environment::new(1));
+    let service = api_grpc::create_spreadsheet_api(SpreadsheetService);
+    let quota = ResourceQuota::new(Some("SpreadsheetServerQuota")).resize_memory(1024 * 1024);
+    let ch_builder = ChannelBuilder::new(env.clone()).set_resource_quota(quota);
+
+    let mut server = ServerBuilder::new(env)
+        .register_service(service)
+        .bind("127.0.0.1", 50_051)
+        .channel_args(ch_builder.build_args())
+        .build()
+        .unwrap();
+    server.start();
+    for (host, port) in server.bind_addrs() {
+        println!("listening on {}:{}", host, port);
+    }
 }
