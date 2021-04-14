@@ -14,6 +14,8 @@ pkgs.mkShell {
         pkgs.cargo
         buildPackages.protobuf
             rustc
+            nodePackages.webpack
+            nodePackages.webpack-cli
             rustfmt
             openssl
             nodejs

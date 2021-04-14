@@ -2,13 +2,19 @@
   "name": "spreadsheet",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "client.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "webpack-cli": "^4.6.0"
+    "@grpc/grpc-js": "~1.0.5",
+    "@grpc/proto-loader": "~0.5.4",
+    "async": "~1.5.2",
+    "google-protobuf": "~3.14.0",
+    "grpc-web": "~1.2.1",
+    "webpack": "~4.43.0",
+    "webpack-cli": "~3.3.11"
   }
 }
