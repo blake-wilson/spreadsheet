@@ -1,9 +1,13 @@
 mod models;
 mod parser;
 
+use futures::channel::oneshot;
+use futures::executor::block_on;
 use futures::prelude::*;
 use grpcio::{ChannelBuilder, Environment, ResourceQuota, RpcContext, ServerBuilder, UnarySink};
+use std::io::Read;
 use std::sync::Arc;
+use std::{io, thread};
 
 #[path = "proto/grpc/api.rs"]
 mod api;
@@ -64,4 +68,12 @@ fn main() {
     for (host, port) in server.bind_addrs() {
         println!("listening on {}:{}", host, port);
     }
+    let (tx, rx) = oneshot::channel();
+    thread::spawn(move || {
+        println!("Press ENTER to exit...");
+        let _ = io::stdin().read(&mut [0]).unwrap();
+        tx.send(()).unwrap();
+    });
+    let _ = block_on(rx);
+    let _ = block_on(server.shutdown());
 }
