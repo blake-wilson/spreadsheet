@@ -23,7 +23,7 @@ static_resources:
               routes:
               - match: { prefix: "/" }
                 route:
-                  cluster: greeter_service
+                  cluster: spreadsheet_service
                   max_stream_duration:
                     grpc_timeout_header_max: 0s
               cors:
@@ -38,7 +38,7 @@ static_resources:
           - name: envoy.filters.http.cors
           - name: envoy.filters.http.router
   clusters:
-  - name: greeter_service
+  - name: spreadsheet_service
     connect_timeout: 0.25s
     type: logical_dns
     http2_protocol_options: {}

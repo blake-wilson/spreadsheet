@@ -5,11 +5,11 @@ var client = new SpreadsheetAPIClient('http://' + window.location.hostname + ':8
                                null, null);
 
 // simple unary call
-var cell1 = new spreadsheet.InsertCell();
-cell1.setRow(10);
-cell1.setCol(5);
-cell1.setValue("this is the value");
-var request = new InsertCellsRequest();
+var c1 = new proto.spreadsheet.InsertCell();
+c1.setRow(10);
+c1.setCol(5);
+c1.setValue("this is the value");
+var request = new proto.spreadsheet.InsertCellsRequest();
 request.setCellsList([c1]);
 
 client.insertCells(request, {}, (err, response) => {

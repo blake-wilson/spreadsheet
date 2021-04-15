@@ -8,10 +8,24 @@ build = "build.rs"
 
 [dependencies]
 grpcio-sys = { version = "0.8.1" }
-grpcio = {  version = "0.8.2", features = ["openssl"] }
+grpcio = {  version = "0.8.2", features = ["openssl", "protobuf-codec"], default-features = false }
 futures = "0.3.14"
 protobuf = { version = "2.22.1" }
-
+log = "0.4"
+slog = "2.0"
+slog-async = "2.1"
+slog-stdlog = "4.0"
+slog-scope = "4.0"
+slog-term = "2.2"
 
 [build-dependencies]
 protoc-grpcio = "3.0.0"
+
+
+[[bin]]
+name = "spreadsheet_client"
+path = "src/client.rs"
+
+[[bin]]
+name = "spreadsheet_server"
+path = "src/main.rs"

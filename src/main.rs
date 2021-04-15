@@ -24,6 +24,7 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
         req: api::InsertCellsRequest,
         sink: UnarySink<api::InsertCellsResponse>,
     ) {
+        println!("got request");
         for c in req.get_cells() {
             println!(
                 "inserting cell {:?} at row {:?} and col {:?}",
@@ -60,7 +61,7 @@ fn main() {
 
     let mut server = ServerBuilder::new(env)
         .register_service(service)
-        .bind("127.0.0.1", 50_051)
+        .bind("0.0.0.0", 9090)
         .channel_args(ch_builder.build_args())
         .build()
         .unwrap();
