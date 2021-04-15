@@ -17,7 +17,7 @@ client.insertCells(request, {}, (err, response) => {
     console.log(`Unexpected error for sayHello: code = ${err.code}` +
                 `, message = "${err.message}"`);
   } else {
-    console.log(response.getMessage());
+    console.log("inserted " + response.getNuminserted().toString() + " cells");
   }
 });
 
