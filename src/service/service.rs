@@ -6,7 +6,7 @@ pub trait CellsService {
     fn insert_cells(&mut self, cells: &Vec<models::Cell>);
 
     // get_cells returns a Vector of cells in the provided rectangle
-    fn get_cells(&mut self, r: models::Rect) -> Vec<models::Cell>;
+    fn get_cells(&self, r: models::Rect) -> Vec<models::Cell>;
 }
 
 pub struct MemoryCellsService {
@@ -27,7 +27,7 @@ impl CellsService for MemoryCellsService {
                 .insert((cc.row * self.num_cols + cc.col) as usize, cc);
         }
     }
-    fn get_cells(&mut self, r: models::Rect) -> Vec<models::Cell> {
+    fn get_cells(&self, r: models::Rect) -> Vec<models::Cell> {
         let mut result_cells: Vec<models::Cell> = Vec::new();
         for row in r.start_row..r.stop_row {
             let start_idx = row * self.num_cols;

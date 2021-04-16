@@ -56,6 +56,20 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
         req: api::GetCellsRequest,
         sink: UnarySink<api::GetCellsResponse>,
     ) {
+        let rect = api_rect_to_model(req.get_rect());
+        let cells: Vec<models::Cell>;
+        {
+            let cs = self.cells_service.lock().unwrap();
+            cells = cs.get_cells(rect);
+        }
+        let mut resp = api::GetCellsResponse::default();
+        resp.set_cells(protobuf::RepeatedField::from_vec(model_cells_to_api(cells)));
+
+        let f = sink
+            .success(resp)
+            .map_err(move |e| println!("failed to reply {:?}: {:?}", req, e))
+            .map(|_| ());
+        ctx.spawn(f);
     }
 }
 
@@ -112,4 +126,26 @@ fn insert_cells_to_models(insert_cells: &[api::InsertCell]) -> Vec<models::Cell>
         });
     }
     ret
+}
+
+fn model_cells_to_api(cells: Vec<models::Cell>) -> Vec<api::Cell> {
+    let mut ret = vec![];
+    for c in cells {
+        let mut api_cell = api::Cell::default();
+        api_cell.set_row(c.row);
+        api_cell.set_col(c.col);
+        api_cell.set_value(c.value);
+        api_cell.set_display_value(c.display_value);
+        ret.push(api_cell);
+    }
+    ret
+}
+
+fn api_rect_to_model(rect: &api::Rect) -> models::Rect {
+    models::Rect {
+        start_row: rect.start_row,
+        start_col: rect.start_col,
+        stop_row: rect.stop_row,
+        stop_col: rect.stop_col,
+    }
 }
