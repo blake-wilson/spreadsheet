@@ -18,8 +18,13 @@ struct Service {
 impl CellsService for Service {
     fn insert_cells(&mut self, cells: Vec<models::Cell>) {
         for c in cells {
+            let mut cc = c.clone();
+            let mut tokens = parser::lex(&c.value);
+            let formula = parser::parse(&mut tokens);
+            let display_value = parser::evaluate(formula);
+            cc.display_value = display_value;
             self.data
-                .insert((c.row * self.num_cols + c.col) as usize, c);
+                .insert((cc.row * self.num_cols + cc.col) as usize, cc);
         }
     }
     fn get_cells(&mut self, r: models::Rect) -> Vec<models::Cell> {
@@ -28,11 +33,7 @@ impl CellsService for Service {
             let start_idx = row * self.num_cols;
             let stop_idx = start_idx + models::rect::width(&r);
             for idx in start_idx..stop_idx {
-                let mut c = self.data.get(idx as usize).unwrap().clone();
-                let mut tokens = parser::lex(&c.value);
-                let formula = parser::parse(&mut tokens);
-                let display_value = parser::evaluate(formula);
-                c.display_value = display_value;
+                let c = self.data.get(idx as usize).unwrap().clone();
                 result_cells.push(c);
             }
         }
