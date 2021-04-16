@@ -3,20 +3,20 @@ use super::super::parser;
 
 pub trait CellsService {
     // insert_cells inserts the provided list of cells into the store.
-    fn insert_cells(&mut self, cells: Vec<models::Cell>);
+    fn insert_cells(&mut self, cells: &Vec<models::Cell>);
 
     // get_cells returns a Vector of cells in the provided rectangle
     fn get_cells(&mut self, r: models::Rect) -> Vec<models::Cell>;
 }
 
-struct Service {
+pub struct MemoryCellsService {
     num_cols: i32,
     // data stored in row-major order
     data: Vec<models::Cell>,
 }
 
-impl CellsService for Service {
-    fn insert_cells(&mut self, cells: Vec<models::Cell>) {
+impl CellsService for MemoryCellsService {
+    fn insert_cells(&mut self, cells: &Vec<models::Cell>) {
         for c in cells {
             let mut cc = c.clone();
             let mut tokens = parser::lex(&c.value);
@@ -38,5 +38,22 @@ impl CellsService for Service {
             }
         }
         result_cells
+    }
+}
+
+impl MemoryCellsService {
+    pub fn new(num_rows: i32, num_cols: i32) -> Self {
+        MemoryCellsService {
+            num_cols: 26,
+            data: vec![
+                models::Cell {
+                    row: -1,
+                    col: -1,
+                    value: "".to_string(),
+                    display_value: "".to_string(),
+                };
+                (num_cols * num_rows) as usize
+            ],
+        }
     }
 }

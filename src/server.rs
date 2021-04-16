@@ -1,12 +1,14 @@
 mod models;
 mod parser;
+mod service;
 
 use futures::channel::oneshot;
 use futures::executor::block_on;
 use futures::prelude::*;
 use grpcio::{ChannelBuilder, Environment, ResourceQuota, RpcContext, ServerBuilder, UnarySink};
+use service::CellsService;
 use std::io::Read;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::{io, thread};
 
 #[path = "proto/grpc/api.rs"]
@@ -14,10 +16,10 @@ mod api;
 #[path = "proto/grpc/api_grpc.rs"]
 mod api_grpc;
 
-mod service;
-
 #[derive(Clone)]
-struct SpreadsheetService;
+struct SpreadsheetService {
+    cells_service: Arc<Mutex<service::MemoryCellsService>>,
+}
 
 impl api_grpc::SpreadsheetApi for SpreadsheetService {
     fn insert_cells(
@@ -34,6 +36,11 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
                 c.get_col(),
                 c.get_row()
             );
+        }
+        {
+            let cells = insert_cells_to_models(req.get_cells());
+            let mut cs = self.cells_service.lock().unwrap();
+            cs.insert_cells(&cells);
         }
         let mut resp = api::InsertCellsResponse::default();
         resp.set_numInserted(req.get_cells().len() as i32);
@@ -57,8 +64,13 @@ fn main() {
     };
     println!("cell: {:?}", c);
 
+    let cells_service = service::MemoryCellsService::new(100, 26);
+    let ss_service = SpreadsheetService {
+        cells_service: Arc::new(Mutex::new(cells_service)),
+    };
+
     let env = Arc::new(Environment::new(1));
-    let service = api_grpc::create_spreadsheet_api(SpreadsheetService);
+    let service = api_grpc::create_spreadsheet_api(ss_service);
     let quota = ResourceQuota::new(Some("SpreadsheetServerQuota")).resize_memory(1024 * 1024);
     let ch_builder = ChannelBuilder::new(env.clone()).set_resource_quota(quota);
 
@@ -80,4 +92,17 @@ fn main() {
     });
     let _ = block_on(rx);
     let _ = block_on(server.shutdown());
+}
+
+fn insert_cells_to_models(insert_cells: &[api::InsertCell]) -> Vec<models::Cell> {
+    let mut ret = vec![];
+    for c in insert_cells {
+        ret.push(models::Cell {
+            row: c.row,
+            col: c.col,
+            value: c.value.clone(),
+            display_value: "".to_owned(),
+        });
+    }
+    ret
 }

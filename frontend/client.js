@@ -8,7 +8,7 @@ var client = new SpreadsheetAPIClient('http://' + window.location.hostname + ':8
 var c1 = new proto.spreadsheet.InsertCell();
 c1.setRow(10);
 c1.setCol(5);
-c1.setValue("this is the value");
+c1.setValue("5+7");
 var request = new proto.spreadsheet.InsertCellsRequest();
 request.setCellsList([c1]);
 
