@@ -26,6 +26,38 @@ pub enum ASTNode {
     },
 }
 
+enum EvalResult {
+    Numeric(f64),
+    NonNumeric(String),
+}
+
+// evalute gets the display value for the provided AST
+pub fn evaluate(n: ASTNode) -> String {
+    let res = evaluate_internal(n);
+    match res {
+        EvalResult::Numeric(n) => n.to_string(),
+        EvalResult::NonNumeric(s) => s,
+    }
+}
+
+fn evaluate_internal(n: ASTNode) -> EvalResult {
+    match n {
+        ASTNode::Empty => EvalResult::NonNumeric("".to_owned()),
+        ASTNode::Number(n) => EvalResult::Numeric(n),
+        ASTNode::BinaryExpr { op, lhs, rhs } => {
+            match (evaluate_internal(*lhs), evaluate_internal(*rhs)) {
+                (EvalResult::Numeric(n1), EvalResult::Numeric(n2)) => match op {
+                    Operator::Add => EvalResult::Numeric(n1 + n2),
+                    Operator::Subtract => EvalResult::Numeric(n1 - n2),
+                    Operator::Multiply => EvalResult::Numeric(n1 * n2),
+                },
+                _ => EvalResult::Numeric(0f64),
+            }
+        }
+        _ => EvalResult::NonNumeric("".to_owned()),
+    }
+}
+
 pub fn parse(tokens: &mut Vec<Token>) -> ASTNode {
     if tokens.len() == 0 {
         return ASTNode::Empty;

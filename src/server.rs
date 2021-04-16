@@ -53,6 +53,7 @@ fn main() {
         row: 10,
         col: 30,
         value: "10".to_string(),
+        display_value: "10".to_string(),
     };
     println!("cell: {:?}", c);
 

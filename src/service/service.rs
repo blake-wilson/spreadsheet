@@ -1,4 +1,5 @@
 use super::super::models;
+use super::super::parser;
 
 pub trait CellsService {
     // insert_cells inserts the provided list of cells into the store.
@@ -27,8 +28,12 @@ impl CellsService for Service {
             let start_idx = row * self.num_cols;
             let stop_idx = start_idx + models::rect::width(&r);
             for idx in start_idx..stop_idx {
-                let c = self.data.get(idx as usize).unwrap();
-                result_cells.push(c.clone());
+                let mut c = self.data.get(idx as usize).unwrap().clone();
+                let mut tokens = parser::lex(&c.value);
+                let formula = parser::parse(&mut tokens);
+                let display_value = parser::evaluate(formula);
+                c.display_value = display_value;
+                result_cells.push(c);
             }
         }
         result_cells
