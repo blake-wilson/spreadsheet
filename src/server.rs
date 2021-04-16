@@ -43,12 +43,19 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
             cs.insert_cells(&cells);
         }
         let mut resp = api::InsertCellsResponse::default();
-        resp.set_numInserted(req.get_cells().len() as i32);
+        resp.set_num_inserted(req.get_cells().len() as i32);
         let f = sink
             .success(resp)
             .map_err(move |e| println!("failed to reply {:?}: {:?}", req, e))
             .map(|_| ());
         ctx.spawn(f);
+    }
+    fn get_cells(
+        &mut self,
+        ctx: RpcContext<'_>,
+        req: api::GetCellsRequest,
+        sink: UnarySink<api::GetCellsResponse>,
+    ) {
     }
 }
 

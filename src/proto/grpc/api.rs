@@ -24,6 +24,263 @@
 // const _PROTOBUF_VERSION_CHECK: () = ::protobuf::VERSION_2_22_1;
 
 #[derive(PartialEq,Clone,Default)]
+pub struct Rect {
+    // message fields
+    pub start_row: i32,
+    pub start_col: i32,
+    pub stop_row: i32,
+    pub stop_col: i32,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a Rect {
+    fn default() -> &'a Rect {
+        <Rect as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl Rect {
+    pub fn new() -> Rect {
+        ::std::default::Default::default()
+    }
+
+    // int32 start_row = 1;
+
+
+    pub fn get_start_row(&self) -> i32 {
+        self.start_row
+    }
+    pub fn clear_start_row(&mut self) {
+        self.start_row = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_start_row(&mut self, v: i32) {
+        self.start_row = v;
+    }
+
+    // int32 start_col = 2;
+
+
+    pub fn get_start_col(&self) -> i32 {
+        self.start_col
+    }
+    pub fn clear_start_col(&mut self) {
+        self.start_col = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_start_col(&mut self, v: i32) {
+        self.start_col = v;
+    }
+
+    // int32 stop_row = 3;
+
+
+    pub fn get_stop_row(&self) -> i32 {
+        self.stop_row
+    }
+    pub fn clear_stop_row(&mut self) {
+        self.stop_row = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_stop_row(&mut self, v: i32) {
+        self.stop_row = v;
+    }
+
+    // int32 stop_col = 4;
+
+
+    pub fn get_stop_col(&self) -> i32 {
+        self.stop_col
+    }
+    pub fn clear_stop_col(&mut self) {
+        self.stop_col = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_stop_col(&mut self, v: i32) {
+        self.stop_col = v;
+    }
+}
+
+impl ::protobuf::Message for Rect {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_int32()?;
+                    self.start_row = tmp;
+                },
+                2 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_int32()?;
+                    self.start_col = tmp;
+                },
+                3 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_int32()?;
+                    self.stop_row = tmp;
+                },
+                4 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_int32()?;
+                    self.stop_col = tmp;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if self.start_row != 0 {
+            my_size += ::protobuf::rt::value_size(1, self.start_row, ::protobuf::wire_format::WireTypeVarint);
+        }
+        if self.start_col != 0 {
+            my_size += ::protobuf::rt::value_size(2, self.start_col, ::protobuf::wire_format::WireTypeVarint);
+        }
+        if self.stop_row != 0 {
+            my_size += ::protobuf::rt::value_size(3, self.stop_row, ::protobuf::wire_format::WireTypeVarint);
+        }
+        if self.stop_col != 0 {
+            my_size += ::protobuf::rt::value_size(4, self.stop_col, ::protobuf::wire_format::WireTypeVarint);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.start_row != 0 {
+            os.write_int32(1, self.start_row)?;
+        }
+        if self.start_col != 0 {
+            os.write_int32(2, self.start_col)?;
+        }
+        if self.stop_row != 0 {
+            os.write_int32(3, self.stop_row)?;
+        }
+        if self.stop_col != 0 {
+            os.write_int32(4, self.stop_col)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> Rect {
+        Rect::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt32>(
+                "start_row",
+                |m: &Rect| { &m.start_row },
+                |m: &mut Rect| { &mut m.start_row },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt32>(
+                "start_col",
+                |m: &Rect| { &m.start_col },
+                |m: &mut Rect| { &mut m.start_col },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt32>(
+                "stop_row",
+                |m: &Rect| { &m.stop_row },
+                |m: &mut Rect| { &mut m.stop_row },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt32>(
+                "stop_col",
+                |m: &Rect| { &m.stop_col },
+                |m: &mut Rect| { &mut m.stop_col },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<Rect>(
+                "Rect",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static Rect {
+        static instance: ::protobuf::rt::LazyV2<Rect> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(Rect::new)
+    }
+}
+
+impl ::protobuf::Clear for Rect {
+    fn clear(&mut self) {
+        self.start_row = 0;
+        self.start_col = 0;
+        self.stop_row = 0;
+        self.stop_col = 0;
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for Rect {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for Rect {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
 pub struct InsertCell {
     // message fields
     pub row: i32,
@@ -253,6 +510,277 @@ impl ::protobuf::reflect::ProtobufValue for InsertCell {
 }
 
 #[derive(PartialEq,Clone,Default)]
+pub struct Cell {
+    // message fields
+    pub row: i32,
+    pub col: i32,
+    pub value: ::std::string::String,
+    pub display_value: ::std::string::String,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a Cell {
+    fn default() -> &'a Cell {
+        <Cell as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl Cell {
+    pub fn new() -> Cell {
+        ::std::default::Default::default()
+    }
+
+    // int32 row = 1;
+
+
+    pub fn get_row(&self) -> i32 {
+        self.row
+    }
+    pub fn clear_row(&mut self) {
+        self.row = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_row(&mut self, v: i32) {
+        self.row = v;
+    }
+
+    // int32 col = 2;
+
+
+    pub fn get_col(&self) -> i32 {
+        self.col
+    }
+    pub fn clear_col(&mut self) {
+        self.col = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_col(&mut self, v: i32) {
+        self.col = v;
+    }
+
+    // string value = 3;
+
+
+    pub fn get_value(&self) -> &str {
+        &self.value
+    }
+    pub fn clear_value(&mut self) {
+        self.value.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_value(&mut self, v: ::std::string::String) {
+        self.value = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_value(&mut self) -> &mut ::std::string::String {
+        &mut self.value
+    }
+
+    // Take field
+    pub fn take_value(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.value, ::std::string::String::new())
+    }
+
+    // string display_value = 4;
+
+
+    pub fn get_display_value(&self) -> &str {
+        &self.display_value
+    }
+    pub fn clear_display_value(&mut self) {
+        self.display_value.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_display_value(&mut self, v: ::std::string::String) {
+        self.display_value = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_display_value(&mut self) -> &mut ::std::string::String {
+        &mut self.display_value
+    }
+
+    // Take field
+    pub fn take_display_value(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.display_value, ::std::string::String::new())
+    }
+}
+
+impl ::protobuf::Message for Cell {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_int32()?;
+                    self.row = tmp;
+                },
+                2 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_int32()?;
+                    self.col = tmp;
+                },
+                3 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.value)?;
+                },
+                4 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.display_value)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if self.row != 0 {
+            my_size += ::protobuf::rt::value_size(1, self.row, ::protobuf::wire_format::WireTypeVarint);
+        }
+        if self.col != 0 {
+            my_size += ::protobuf::rt::value_size(2, self.col, ::protobuf::wire_format::WireTypeVarint);
+        }
+        if !self.value.is_empty() {
+            my_size += ::protobuf::rt::string_size(3, &self.value);
+        }
+        if !self.display_value.is_empty() {
+            my_size += ::protobuf::rt::string_size(4, &self.display_value);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.row != 0 {
+            os.write_int32(1, self.row)?;
+        }
+        if self.col != 0 {
+            os.write_int32(2, self.col)?;
+        }
+        if !self.value.is_empty() {
+            os.write_string(3, &self.value)?;
+        }
+        if !self.display_value.is_empty() {
+            os.write_string(4, &self.display_value)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> Cell {
+        Cell::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt32>(
+                "row",
+                |m: &Cell| { &m.row },
+                |m: &mut Cell| { &mut m.row },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt32>(
+                "col",
+                |m: &Cell| { &m.col },
+                |m: &mut Cell| { &mut m.col },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "value",
+                |m: &Cell| { &m.value },
+                |m: &mut Cell| { &mut m.value },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "display_value",
+                |m: &Cell| { &m.display_value },
+                |m: &mut Cell| { &mut m.display_value },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<Cell>(
+                "Cell",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static Cell {
+        static instance: ::protobuf::rt::LazyV2<Cell> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(Cell::new)
+    }
+}
+
+impl ::protobuf::Clear for Cell {
+    fn clear(&mut self) {
+        self.row = 0;
+        self.col = 0;
+        self.value.clear();
+        self.display_value.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for Cell {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for Cell {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
 pub struct InsertCellsRequest {
     // message fields
     pub cells: ::protobuf::RepeatedField<InsertCell>,
@@ -421,7 +949,7 @@ impl ::protobuf::reflect::ProtobufValue for InsertCellsRequest {
 #[derive(PartialEq,Clone,Default)]
 pub struct InsertCellsResponse {
     // message fields
-    pub numInserted: i32,
+    pub num_inserted: i32,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -438,19 +966,19 @@ impl InsertCellsResponse {
         ::std::default::Default::default()
     }
 
-    // int32 numInserted = 1;
+    // int32 num_inserted = 1;
 
 
-    pub fn get_numInserted(&self) -> i32 {
-        self.numInserted
+    pub fn get_num_inserted(&self) -> i32 {
+        self.num_inserted
     }
-    pub fn clear_numInserted(&mut self) {
-        self.numInserted = 0;
+    pub fn clear_num_inserted(&mut self) {
+        self.num_inserted = 0;
     }
 
     // Param is passed by value, moved
-    pub fn set_numInserted(&mut self, v: i32) {
-        self.numInserted = v;
+    pub fn set_num_inserted(&mut self, v: i32) {
+        self.num_inserted = v;
     }
 }
 
@@ -468,7 +996,7 @@ impl ::protobuf::Message for InsertCellsResponse {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_int32()?;
-                    self.numInserted = tmp;
+                    self.num_inserted = tmp;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -482,8 +1010,8 @@ impl ::protobuf::Message for InsertCellsResponse {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        if self.numInserted != 0 {
-            my_size += ::protobuf::rt::value_size(1, self.numInserted, ::protobuf::wire_format::WireTypeVarint);
+        if self.num_inserted != 0 {
+            my_size += ::protobuf::rt::value_size(1, self.num_inserted, ::protobuf::wire_format::WireTypeVarint);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -491,8 +1019,8 @@ impl ::protobuf::Message for InsertCellsResponse {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
-        if self.numInserted != 0 {
-            os.write_int32(1, self.numInserted)?;
+        if self.num_inserted != 0 {
+            os.write_int32(1, self.num_inserted)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -533,9 +1061,9 @@ impl ::protobuf::Message for InsertCellsResponse {
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt32>(
-                "numInserted",
-                |m: &InsertCellsResponse| { &m.numInserted },
-                |m: &mut InsertCellsResponse| { &mut m.numInserted },
+                "num_inserted",
+                |m: &InsertCellsResponse| { &m.num_inserted },
+                |m: &mut InsertCellsResponse| { &mut m.num_inserted },
             ));
             ::protobuf::reflect::MessageDescriptor::new_pb_name::<InsertCellsResponse>(
                 "InsertCellsResponse",
@@ -553,7 +1081,7 @@ impl ::protobuf::Message for InsertCellsResponse {
 
 impl ::protobuf::Clear for InsertCellsResponse {
     fn clear(&mut self) {
-        self.numInserted = 0;
+        self.num_inserted = 0;
         self.unknown_fields.clear();
     }
 }
@@ -570,15 +1098,365 @@ impl ::protobuf::reflect::ProtobufValue for InsertCellsResponse {
     }
 }
 
+#[derive(PartialEq,Clone,Default)]
+pub struct GetCellsRequest {
+    // message fields
+    pub rect: ::protobuf::SingularPtrField<Rect>,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a GetCellsRequest {
+    fn default() -> &'a GetCellsRequest {
+        <GetCellsRequest as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl GetCellsRequest {
+    pub fn new() -> GetCellsRequest {
+        ::std::default::Default::default()
+    }
+
+    // .spreadsheet.Rect rect = 1;
+
+
+    pub fn get_rect(&self) -> &Rect {
+        self.rect.as_ref().unwrap_or_else(|| <Rect as ::protobuf::Message>::default_instance())
+    }
+    pub fn clear_rect(&mut self) {
+        self.rect.clear();
+    }
+
+    pub fn has_rect(&self) -> bool {
+        self.rect.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_rect(&mut self, v: Rect) {
+        self.rect = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_rect(&mut self) -> &mut Rect {
+        if self.rect.is_none() {
+            self.rect.set_default();
+        }
+        self.rect.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_rect(&mut self) -> Rect {
+        self.rect.take().unwrap_or_else(|| Rect::new())
+    }
+}
+
+impl ::protobuf::Message for GetCellsRequest {
+    fn is_initialized(&self) -> bool {
+        for v in &self.rect {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.rect)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if let Some(ref v) = self.rect.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if let Some(ref v) = self.rect.as_ref() {
+            os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> GetCellsRequest {
+        GetCellsRequest::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Rect>>(
+                "rect",
+                |m: &GetCellsRequest| { &m.rect },
+                |m: &mut GetCellsRequest| { &mut m.rect },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<GetCellsRequest>(
+                "GetCellsRequest",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static GetCellsRequest {
+        static instance: ::protobuf::rt::LazyV2<GetCellsRequest> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(GetCellsRequest::new)
+    }
+}
+
+impl ::protobuf::Clear for GetCellsRequest {
+    fn clear(&mut self) {
+        self.rect.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for GetCellsRequest {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for GetCellsRequest {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+pub struct GetCellsResponse {
+    // message fields
+    pub cells: ::protobuf::RepeatedField<Cell>,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a GetCellsResponse {
+    fn default() -> &'a GetCellsResponse {
+        <GetCellsResponse as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl GetCellsResponse {
+    pub fn new() -> GetCellsResponse {
+        ::std::default::Default::default()
+    }
+
+    // repeated .spreadsheet.Cell cells = 1;
+
+
+    pub fn get_cells(&self) -> &[Cell] {
+        &self.cells
+    }
+    pub fn clear_cells(&mut self) {
+        self.cells.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_cells(&mut self, v: ::protobuf::RepeatedField<Cell>) {
+        self.cells = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_cells(&mut self) -> &mut ::protobuf::RepeatedField<Cell> {
+        &mut self.cells
+    }
+
+    // Take field
+    pub fn take_cells(&mut self) -> ::protobuf::RepeatedField<Cell> {
+        ::std::mem::replace(&mut self.cells, ::protobuf::RepeatedField::new())
+    }
+}
+
+impl ::protobuf::Message for GetCellsResponse {
+    fn is_initialized(&self) -> bool {
+        for v in &self.cells {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.cells)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        for value in &self.cells {
+            let len = value.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        };
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        for v in &self.cells {
+            os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        };
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> GetCellsResponse {
+        GetCellsResponse::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Cell>>(
+                "cells",
+                |m: &GetCellsResponse| { &m.cells },
+                |m: &mut GetCellsResponse| { &mut m.cells },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<GetCellsResponse>(
+                "GetCellsResponse",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static GetCellsResponse {
+        static instance: ::protobuf::rt::LazyV2<GetCellsResponse> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(GetCellsResponse::new)
+    }
+}
+
+impl ::protobuf::Clear for GetCellsResponse {
+    fn clear(&mut self) {
+        self.cells.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for GetCellsResponse {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for GetCellsResponse {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\tapi.proto\x12\x0bspreadsheet\"F\n\nInsertCell\x12\x10\n\x03row\x18\
-    \x01\x20\x01(\x05R\x03row\x12\x10\n\x03col\x18\x02\x20\x01(\x05R\x03col\
-    \x12\x14\n\x05value\x18\x03\x20\x01(\tR\x05value\"C\n\x12InsertCellsRequ\
-    est\x12-\n\x05cells\x18\x01\x20\x03(\x0b2\x17.spreadsheet.InsertCellR\
-    \x05cells\"7\n\x13InsertCellsResponse\x12\x20\n\x0bnumInserted\x18\x01\
-    \x20\x01(\x05R\x0bnumInserted2b\n\x0eSpreadsheetAPI\x12P\n\x0bInsertCell\
-    s\x12\x1f.spreadsheet.InsertCellsRequest\x1a\x20.spreadsheet.InsertCells\
-    Responseb\x06proto3\
+    \n\tapi.proto\x12\x0bspreadsheet\"v\n\x04Rect\x12\x1b\n\tstart_row\x18\
+    \x01\x20\x01(\x05R\x08startRow\x12\x1b\n\tstart_col\x18\x02\x20\x01(\x05\
+    R\x08startCol\x12\x19\n\x08stop_row\x18\x03\x20\x01(\x05R\x07stopRow\x12\
+    \x19\n\x08stop_col\x18\x04\x20\x01(\x05R\x07stopCol\"F\n\nInsertCell\x12\
+    \x10\n\x03row\x18\x01\x20\x01(\x05R\x03row\x12\x10\n\x03col\x18\x02\x20\
+    \x01(\x05R\x03col\x12\x14\n\x05value\x18\x03\x20\x01(\tR\x05value\"e\n\
+    \x04Cell\x12\x10\n\x03row\x18\x01\x20\x01(\x05R\x03row\x12\x10\n\x03col\
+    \x18\x02\x20\x01(\x05R\x03col\x12\x14\n\x05value\x18\x03\x20\x01(\tR\x05\
+    value\x12#\n\rdisplay_value\x18\x04\x20\x01(\tR\x0cdisplayValue\"C\n\x12\
+    InsertCellsRequest\x12-\n\x05cells\x18\x01\x20\x03(\x0b2\x17.spreadsheet\
+    .InsertCellR\x05cells\"8\n\x13InsertCellsResponse\x12!\n\x0cnum_inserted\
+    \x18\x01\x20\x01(\x05R\x0bnumInserted\"8\n\x0fGetCellsRequest\x12%\n\x04\
+    rect\x18\x01\x20\x01(\x0b2\x11.spreadsheet.RectR\x04rect\";\n\x10GetCell\
+    sResponse\x12'\n\x05cells\x18\x01\x20\x03(\x0b2\x11.spreadsheet.CellR\
+    \x05cells2\xab\x01\n\x0eSpreadsheetAPI\x12P\n\x0bInsertCells\x12\x1f.spr\
+    eadsheet.InsertCellsRequest\x1a\x20.spreadsheet.InsertCellsResponse\x12G\
+    \n\x08GetCells\x12\x1c.spreadsheet.GetCellsRequest\x1a\x1d.spreadsheet.G\
+    etCellsResponseb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

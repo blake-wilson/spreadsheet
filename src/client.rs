@@ -26,5 +26,5 @@ fn main() {
     c1.set_value("this is the value".to_owned());
     req.set_cells(protobuf::RepeatedField::from(vec![c1]));
     let reply = client.insert_cells(&req).expect("rpc");
-    info!("{} cells inserted", reply.get_numInserted());
+    info!("{} cells inserted", reply.get_num_inserted());
 }

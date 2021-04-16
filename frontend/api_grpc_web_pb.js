@@ -150,5 +150,85 @@ proto.spreadsheet.SpreadsheetAPIPromiseClient.prototype.insertCells =
 };
 
 
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
+ *   !proto.spreadsheet.GetCellsRequest,
+ *   !proto.spreadsheet.GetCellsResponse>}
+ */
+const methodDescriptor_SpreadsheetAPI_GetCells = new grpc.web.MethodDescriptor(
+  '/spreadsheet.SpreadsheetAPI/GetCells',
+  grpc.web.MethodType.UNARY,
+  proto.spreadsheet.GetCellsRequest,
+  proto.spreadsheet.GetCellsResponse,
+  /**
+   * @param {!proto.spreadsheet.GetCellsRequest} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.spreadsheet.GetCellsResponse.deserializeBinary
+);
+
+
+/**
+ * @const
+ * @type {!grpc.web.AbstractClientBase.MethodInfo<
+ *   !proto.spreadsheet.GetCellsRequest,
+ *   !proto.spreadsheet.GetCellsResponse>}
+ */
+const methodInfo_SpreadsheetAPI_GetCells = new grpc.web.AbstractClientBase.MethodInfo(
+  proto.spreadsheet.GetCellsResponse,
+  /**
+   * @param {!proto.spreadsheet.GetCellsRequest} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.spreadsheet.GetCellsResponse.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.spreadsheet.GetCellsRequest} request The
+ *     request proto
+ * @param {?Object<string, string>} metadata User defined
+ *     call metadata
+ * @param {function(?grpc.web.Error, ?proto.spreadsheet.GetCellsResponse)}
+ *     callback The callback function(error, response)
+ * @return {!grpc.web.ClientReadableStream<!proto.spreadsheet.GetCellsResponse>|undefined}
+ *     The XHR Node Readable Stream
+ */
+proto.spreadsheet.SpreadsheetAPIClient.prototype.getCells =
+    function(request, metadata, callback) {
+  return this.client_.rpcCall(this.hostname_ +
+      '/spreadsheet.SpreadsheetAPI/GetCells',
+      request,
+      metadata || {},
+      methodDescriptor_SpreadsheetAPI_GetCells,
+      callback);
+};
+
+
+/**
+ * @param {!proto.spreadsheet.GetCellsRequest} request The
+ *     request proto
+ * @param {?Object<string, string>} metadata User defined
+ *     call metadata
+ * @return {!Promise<!proto.spreadsheet.GetCellsResponse>}
+ *     Promise that resolves to the response
+ */
+proto.spreadsheet.SpreadsheetAPIPromiseClient.prototype.getCells =
+    function(request, metadata) {
+  return this.client_.unaryCall(this.hostname_ +
+      '/spreadsheet.SpreadsheetAPI/GetCells',
+      request,
+      metadata || {},
+      methodDescriptor_SpreadsheetAPI_GetCells);
+};
+
+
 module.exports = proto.spreadsheet;
 

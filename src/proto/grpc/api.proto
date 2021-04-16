@@ -4,6 +4,14 @@ package spreadsheet;
 
 service SpreadsheetAPI {
     rpc InsertCells(InsertCellsRequest) returns (InsertCellsResponse);
+    rpc GetCells(GetCellsRequest) returns (GetCellsResponse);
+}
+
+message Rect {
+    int32 start_row = 1;
+    int32 start_col = 2;
+    int32 stop_row = 3;
+    int32 stop_col = 4;
 }
 
 message InsertCell {
@@ -12,10 +20,25 @@ message InsertCell {
     string value = 3;
 }
 
+message Cell {
+    int32 row = 1;
+    int32 col = 2;
+    string value = 3;
+    string display_value = 4;
+}
+
 message InsertCellsRequest {
     repeated InsertCell cells = 1;
 }
 
 message InsertCellsResponse {
-    int32 numInserted = 1;
+    int32 num_inserted = 1;
+}
+
+message GetCellsRequest {
+    Rect rect = 1;
+}
+
+message GetCellsResponse {
+    repeated Cell cells = 1;
 }
