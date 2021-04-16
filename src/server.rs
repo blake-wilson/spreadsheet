@@ -14,6 +14,8 @@ mod api;
 #[path = "proto/grpc/api_grpc.rs"]
 mod api_grpc;
 
+mod service;
+
 #[derive(Clone)]
 struct SpreadsheetService;
 
