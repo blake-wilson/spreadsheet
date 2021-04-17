@@ -8,29 +8,42 @@ let apiClient = new SpreadsheetAPIClient('http://' + window.location.hostname + 
                                null, null);
 
 function App(props) {
+
+
+  function handleKeyDown(e) {
+    if (e.keyCode != 13) {
+          return;
+    }
+    e.preventDefault();
+
+    var c1 = new InsertCell();
+    let target = e.target;
+      console.log(target);
+    c1.setRow(target.getAttribute('row'));
+    c1.setCol(target.getAttribute('col'));
+    c1.setValue("5+7");
+    var request = new InsertCellsRequest();
+    request.setCellsList([c1]);
+    apiClient.insertCells(request, {}, (err, response) => {
+    if (err) {
+        console.log(`Unexpected error for sayHello: code = ${err.code}` +
+                    `, message = "${err.message}"`);
+      } else {
+          console.log("inserted " + response.getNumInserted() + " cells");
+      }
+    });
+  }
+
   const items = [];
   for (let i = 0; i < props.numRows; i++) {
       const cells = [];
       for (let j = 0; j < props.numCols; j++) {
+          console.log("i:",i, "j", j);
           cells.push(<td contenteditable='true'
-              height="20px" width="72px"></td>);
+              height="20px" width="72px" row={i.toString()} col={j.toString()} onKeyDown={handleKeyDown}></td>);
       }
       items.push(<tr>{cells}</tr>);
   }
-  var c1 = new InsertCell();
-  c1.setRow(10);
-  c1.setCol(5);
-  c1.setValue("5+7");
-  var request = new InsertCellsRequest();
-  request.setCellsList([c1]);
-  apiClient.insertCells(request, {}, (err, response) => {
-  if (err) {
-    console.log(`Unexpected error for sayHello: code = ${err.code}` +
-                `, message = "${err.message}"`);
-  } else {
-      console.log("inserted " + response.getNumInserted() + " cells");
-  }
-});
   return (
     <div className="App">
       <header className="App-header">
