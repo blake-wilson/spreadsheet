@@ -12,7 +12,8 @@ function App(props) {
   for (let i = 0; i < props.numRows; i++) {
       const cells = [];
       for (let j = 0; j < props.numCols; j++) {
-          cells.push(<td>[    ]</td>);
+          cells.push(<td contenteditable='true'
+              height="20px" width="72px"></td>);
       }
       items.push(<tr>{cells}</tr>);
   }
@@ -33,7 +34,7 @@ function App(props) {
   return (
     <div className="App">
       <header className="App-header">
-        <table> 
+        <table border="1px solid white"> 
             { items }
         </table>
       </header>
