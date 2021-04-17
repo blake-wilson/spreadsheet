@@ -16,6 +16,7 @@ pkgs.mkShell {
             rustc
             nodePackages.webpack
             nodePackages.webpack-cli
+            nodePackages.create-react-app
             rustfmt
             openssl
             nodejs
