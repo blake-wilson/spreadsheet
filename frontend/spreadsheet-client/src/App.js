@@ -28,7 +28,7 @@ function App(props) {
         console.log(`Unexpected error for sayHello: code = ${err.code}` +
                     `, message = "${err.message}"`);
       } else {
-          console.log("inserted " + response.getNumInserted() + " cells");
+          console.log("inserted " + response.getCellsList() + " cells");
       }
     });
   }
