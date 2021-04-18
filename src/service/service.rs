@@ -3,7 +3,7 @@ use super::super::parser;
 
 pub trait CellsService {
     // insert_cells inserts the provided list of cells into the store.
-    fn insert_cells(&mut self, cells: &Vec<models::Cell>);
+    fn insert_cells(&mut self, cells: &Vec<models::Cell>) -> Result<(), &'static str>;
 
     // get_cells returns a Vector of cells in the provided rectangle
     fn get_cells(&self, r: models::Rect) -> Vec<models::Cell>;
@@ -16,16 +16,17 @@ pub struct MemoryCellsService {
 }
 
 impl CellsService for MemoryCellsService {
-    fn insert_cells(&mut self, cells: &Vec<models::Cell>) {
+    fn insert_cells(&mut self, cells: &Vec<models::Cell>) -> Result<(), &'static str> {
         for c in cells {
             let mut cc = c.clone();
             let mut tokens = parser::lex(&c.value);
-            let formula = parser::parse(&mut tokens);
+            let formula = parser::parse(&mut tokens)?;
             let display_value = parser::evaluate(formula);
             cc.display_value = display_value;
             self.data
                 .insert((cc.row * self.num_cols + cc.col) as usize, cc);
         }
+        Ok(())
     }
     fn get_cells(&self, r: models::Rect) -> Vec<models::Cell> {
         let mut result_cells: Vec<models::Cell> = Vec::new();

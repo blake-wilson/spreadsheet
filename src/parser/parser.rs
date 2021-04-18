@@ -8,6 +8,12 @@ pub enum Operator {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct CellRef {
+    col: i32,
+    row: i32,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum ASTNode {
     Empty,
     Number(f64),
@@ -23,6 +29,11 @@ pub enum ASTNode {
     Function {
         name: String,
         args: Vec<Box<ASTNode>>,
+    },
+    Ref(CellRef),
+    Range {
+        start: CellRef,
+        stop: CellRef,
     },
 }
 
@@ -58,41 +69,68 @@ fn evaluate_internal(n: ASTNode) -> EvalResult {
     }
 }
 
-pub fn parse(tokens: &mut Vec<Token>) -> ASTNode {
+pub fn parse(tokens: &mut Vec<Token>) -> Result<ASTNode, &'static str> {
     if tokens.len() == 0 {
-        return ASTNode::Empty;
+        return Ok(ASTNode::Empty);
     }
     let fst = tokens.remove(0);
     match fst.kind {
         TokenKind::Number => parse_number(&fst, tokens),
-        TokenKind::ID => parse_function(&fst, tokens),
+        TokenKind::ID => match tokens.get(0) {
+            Some(token) => match token.kind {
+                TokenKind::LParen => Ok(parse_function(&fst, tokens)),
+                TokenKind::Colon => parse_cell_ref_or_range(&fst, tokens),
+                _ => {
+                    panic!("unimplemented");
+                }
+            },
+            _ => {
+                panic!("unimplemented");
+            }
+        },
         x => {
             panic!("unrecognized token kind {:?}", x);
         }
     }
 }
 
-pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> ASTNode {
+pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, &'static str> {
     let num_node = ASTNode::Number(curr.val.parse::<f64>().unwrap());
     if tokens.len() == 0 {
-        return num_node;
+        return Ok(num_node);
     }
     let next = tokens.get(0).unwrap().clone();
     match next.kind {
         TokenKind::BinaryExpr => {
             tokens.remove(0);
-            let rhs = parse(tokens);
-            ASTNode::BinaryExpr {
+            let rhs = parse(tokens)?;
+            Ok(ASTNode::BinaryExpr {
                 op: get_operator(&next.val),
                 lhs: Box::new(num_node),
                 rhs: Box::new(rhs),
-            }
+            })
         }
         _ => {
             // Only binary expressions can follow numbers
-            num_node
+            Ok(num_node)
         }
     }
+}
+
+pub fn parse_cell_ref_or_range(
+    curr: &Token,
+    tokens: &mut Vec<Token>,
+) -> Result<ASTNode, &'static str> {
+    let start = parse_cell_ref(curr)?;
+    let next = tokens.get(0).unwrap();
+
+    if next.kind != TokenKind::Colon {
+        return Ok(ASTNode::Ref(start));
+    }
+    tokens.remove(0);
+    let stop = parse_cell_ref(tokens.get(0).unwrap())?;
+    tokens.remove(0);
+    Ok(ASTNode::Range { start, stop })
 }
 
 pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> ASTNode {
@@ -124,7 +162,7 @@ pub fn parse_function_argument(tokens: &mut Vec<Token>) -> ASTNode {
     if token.kind == TokenKind::Comma {
         tokens.remove(0);
     }
-    arg
+    arg.unwrap()
 }
 
 pub fn get_operator(val: &str) -> Operator {
@@ -134,4 +172,48 @@ pub fn get_operator(val: &str) -> Operator {
         "*" => Operator::Multiply,
         x => panic!("unrecognized operator {:?}", x),
     }
+}
+
+fn parse_cell_ref(curr: &Token) -> Result<CellRef, &'static str> {
+    let mut col_specified = false;
+    let mut row_specified = false;
+
+    let mut col_str = "".to_string();
+    let mut row_str = "".to_string();
+
+    let mut val = String::new();
+    for c in curr.val.chars() {
+        if !col_specified && (c < 'A' || c > 'z') {
+            return Err("expected a letter but did not find one for an ID");
+        }
+        if c >= 'A' && c <= 'z' {
+            if row_specified {
+                return Err("row already specified but found column specifier");
+            }
+            col_specified = true;
+            col_str.push(c);
+        }
+        if c >= '0' && c <= '9' {
+            if !col_specified {
+                return Err("col must be specified before row");
+            }
+            row_specified = true;
+            row_str.push(c);
+        }
+        val.push(c);
+    }
+
+    Ok(CellRef {
+        row: row_str.parse::<i32>().unwrap(),
+        col: col_letters_to_num(&col_str),
+    })
+}
+
+fn col_letters_to_num(letters: &str) -> i32 {
+    let upper = letters.to_uppercase();
+    let mut total: i32 = 0;
+    for c in upper.chars() {
+        total += (c as i32) - 40;
+    }
+    total
 }
