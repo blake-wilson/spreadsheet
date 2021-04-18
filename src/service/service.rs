@@ -37,8 +37,7 @@ impl CellsService for MemoryCellsService {
 
             if curr_cell.value != cc.value || curr_cell.display_value != cc.display_value {
                 // Only insert if we are updating value or value has been recomputed
-                let added = cc.clone();
-                ret_cells.push(added);
+                ret_cells.push(cc.clone());
                 self.data
                     .insert((cc.row * self.num_cols + cc.col) as usize, cc);
             }
