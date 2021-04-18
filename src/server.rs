@@ -33,8 +33,8 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
             println!(
                 "inserting cell {:?} at row {:?} and col {:?}",
                 c.get_value(),
-                c.get_col(),
-                c.get_row()
+                c.get_row(),
+                c.get_col()
             );
         }
         {

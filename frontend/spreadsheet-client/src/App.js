@@ -18,10 +18,9 @@ function App(props) {
 
     var c1 = new InsertCell();
     let target = e.target;
-      console.log(target);
     c1.setRow(target.getAttribute('row'));
     c1.setCol(target.getAttribute('col'));
-    c1.setValue("5+7");
+    c1.setValue(target.textContent);
     var request = new InsertCellsRequest();
     request.setCellsList([c1]);
     apiClient.insertCells(request, {}, (err, response) => {
