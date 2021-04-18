@@ -3,7 +3,10 @@ use super::super::parser;
 
 pub trait CellsService {
     // insert_cells inserts the provided list of cells into the store.
-    fn insert_cells(&mut self, cells: &Vec<models::Cell>) -> Result<(), &'static str>;
+    fn insert_cells(
+        &mut self,
+        cells: &Vec<models::Cell>,
+    ) -> Result<Vec<models::Cell>, &'static str>;
 
     // get_cells returns a Vector of cells in the provided rectangle
     fn get_cells(&self, r: models::Rect) -> Vec<models::Cell>;
@@ -16,17 +19,31 @@ pub struct MemoryCellsService {
 }
 
 impl CellsService for MemoryCellsService {
-    fn insert_cells(&mut self, cells: &Vec<models::Cell>) -> Result<(), &'static str> {
+    fn insert_cells(
+        &mut self,
+        cells: &Vec<models::Cell>,
+    ) -> Result<Vec<models::Cell>, &'static str> {
+        let mut ret_cells = vec![];
+
         for c in cells {
             let mut cc = c.clone();
             let mut tokens = parser::lex(&c.value);
             let formula = parser::parse(&mut tokens)?;
             let display_value = parser::evaluate(formula);
             cc.display_value = display_value;
-            self.data
-                .insert((cc.row * self.num_cols + cc.col) as usize, cc);
+
+            let idx = cc.row * self.num_cols + cc.col;
+            let curr_cell = self.data.get(idx as usize).unwrap();
+
+            if curr_cell.value != cc.value || curr_cell.display_value != cc.display_value {
+                // Only insert if we are updating value or value has been recomputed
+                let added = cc.clone();
+                ret_cells.push(added);
+                self.data
+                    .insert((cc.row * self.num_cols + cc.col) as usize, cc);
+            }
         }
-        Ok(())
+        Ok(ret_cells)
     }
     fn get_cells(&self, r: models::Rect) -> Vec<models::Cell> {
         let mut result_cells: Vec<models::Cell> = Vec::new();

@@ -117,7 +117,7 @@ if (goog.DEBUG && !COMPILED) {
  * @constructor
  */
 proto.spreadsheet.InsertCellsResponse = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+  jspb.Message.initialize(this, opt_data, 0, -1, proto.spreadsheet.InsertCellsResponse.repeatedFields_, null);
 };
 goog.inherits(proto.spreadsheet.InsertCellsResponse, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
@@ -960,6 +960,13 @@ proto.spreadsheet.InsertCellsRequest.prototype.clearCellsList = function() {
 
 
 
+/**
+ * List of repeated fields within this message type.
+ * @private {!Array<number>}
+ * @const
+ */
+proto.spreadsheet.InsertCellsResponse.repeatedFields_ = [1];
+
 
 
 if (jspb.Message.GENERATE_TO_OBJECT) {
@@ -991,7 +998,8 @@ proto.spreadsheet.InsertCellsResponse.prototype.toObject = function(opt_includeI
  */
 proto.spreadsheet.InsertCellsResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    numInserted: jspb.Message.getFieldWithDefault(msg, 1, 0)
+    cellsList: jspb.Message.toObjectList(msg.getCellsList(),
+    proto.spreadsheet.Cell.toObject, includeInstance)
   };
 
   if (includeInstance) {
@@ -1029,8 +1037,9 @@ proto.spreadsheet.InsertCellsResponse.deserializeBinaryFromReader = function(msg
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {number} */ (reader.readInt32());
-      msg.setNumInserted(value);
+      var value = new proto.spreadsheet.Cell;
+      reader.readMessage(value,proto.spreadsheet.Cell.deserializeBinaryFromReader);
+      msg.addCells(value);
       break;
     default:
       reader.skipField();
@@ -1061,31 +1070,52 @@ proto.spreadsheet.InsertCellsResponse.prototype.serializeBinary = function() {
  */
 proto.spreadsheet.InsertCellsResponse.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getNumInserted();
-  if (f !== 0) {
-    writer.writeInt32(
+  f = message.getCellsList();
+  if (f.length > 0) {
+    writer.writeRepeatedMessage(
       1,
-      f
+      f,
+      proto.spreadsheet.Cell.serializeBinaryToWriter
     );
   }
 };
 
 
 /**
- * optional int32 num_inserted = 1;
- * @return {number}
+ * repeated Cell cells = 1;
+ * @return {!Array<!proto.spreadsheet.Cell>}
  */
-proto.spreadsheet.InsertCellsResponse.prototype.getNumInserted = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
+proto.spreadsheet.InsertCellsResponse.prototype.getCellsList = function() {
+  return /** @type{!Array<!proto.spreadsheet.Cell>} */ (
+    jspb.Message.getRepeatedWrapperField(this, proto.spreadsheet.Cell, 1));
 };
 
 
 /**
- * @param {number} value
+ * @param {!Array<!proto.spreadsheet.Cell>} value
+ * @return {!proto.spreadsheet.InsertCellsResponse} returns this
+*/
+proto.spreadsheet.InsertCellsResponse.prototype.setCellsList = function(value) {
+  return jspb.Message.setRepeatedWrapperField(this, 1, value);
+};
+
+
+/**
+ * @param {!proto.spreadsheet.Cell=} opt_value
+ * @param {number=} opt_index
+ * @return {!proto.spreadsheet.Cell}
+ */
+proto.spreadsheet.InsertCellsResponse.prototype.addCells = function(opt_value, opt_index) {
+  return jspb.Message.addToRepeatedWrapperField(this, 1, opt_value, proto.spreadsheet.Cell, opt_index);
+};
+
+
+/**
+ * Clears the list making it empty but non-null.
  * @return {!proto.spreadsheet.InsertCellsResponse} returns this
  */
-proto.spreadsheet.InsertCellsResponse.prototype.setNumInserted = function(value) {
-  return jspb.Message.setProto3IntField(this, 1, value);
+proto.spreadsheet.InsertCellsResponse.prototype.clearCellsList = function() {
+  return this.setCellsList([]);
 };
 
 

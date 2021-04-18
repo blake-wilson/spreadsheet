@@ -949,7 +949,7 @@ impl ::protobuf::reflect::ProtobufValue for InsertCellsRequest {
 #[derive(PartialEq,Clone,Default)]
 pub struct InsertCellsResponse {
     // message fields
-    pub num_inserted: i32,
+    pub cells: ::protobuf::RepeatedField<Cell>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -966,24 +966,39 @@ impl InsertCellsResponse {
         ::std::default::Default::default()
     }
 
-    // int32 num_inserted = 1;
+    // repeated .spreadsheet.Cell cells = 1;
 
 
-    pub fn get_num_inserted(&self) -> i32 {
-        self.num_inserted
+    pub fn get_cells(&self) -> &[Cell] {
+        &self.cells
     }
-    pub fn clear_num_inserted(&mut self) {
-        self.num_inserted = 0;
+    pub fn clear_cells(&mut self) {
+        self.cells.clear();
     }
 
     // Param is passed by value, moved
-    pub fn set_num_inserted(&mut self, v: i32) {
-        self.num_inserted = v;
+    pub fn set_cells(&mut self, v: ::protobuf::RepeatedField<Cell>) {
+        self.cells = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_cells(&mut self) -> &mut ::protobuf::RepeatedField<Cell> {
+        &mut self.cells
+    }
+
+    // Take field
+    pub fn take_cells(&mut self) -> ::protobuf::RepeatedField<Cell> {
+        ::std::mem::replace(&mut self.cells, ::protobuf::RepeatedField::new())
     }
 }
 
 impl ::protobuf::Message for InsertCellsResponse {
     fn is_initialized(&self) -> bool {
+        for v in &self.cells {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
         true
     }
 
@@ -992,11 +1007,7 @@ impl ::protobuf::Message for InsertCellsResponse {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
-                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
-                    }
-                    let tmp = is.read_int32()?;
-                    self.num_inserted = tmp;
+                    ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.cells)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -1010,18 +1021,21 @@ impl ::protobuf::Message for InsertCellsResponse {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        if self.num_inserted != 0 {
-            my_size += ::protobuf::rt::value_size(1, self.num_inserted, ::protobuf::wire_format::WireTypeVarint);
-        }
+        for value in &self.cells {
+            let len = value.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        };
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
-        if self.num_inserted != 0 {
-            os.write_int32(1, self.num_inserted)?;
-        }
+        for v in &self.cells {
+            os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        };
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -1060,10 +1074,10 @@ impl ::protobuf::Message for InsertCellsResponse {
         static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
-            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt32>(
-                "num_inserted",
-                |m: &InsertCellsResponse| { &m.num_inserted },
-                |m: &mut InsertCellsResponse| { &mut m.num_inserted },
+            fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Cell>>(
+                "cells",
+                |m: &InsertCellsResponse| { &m.cells },
+                |m: &mut InsertCellsResponse| { &mut m.cells },
             ));
             ::protobuf::reflect::MessageDescriptor::new_pb_name::<InsertCellsResponse>(
                 "InsertCellsResponse",
@@ -1081,7 +1095,7 @@ impl ::protobuf::Message for InsertCellsResponse {
 
 impl ::protobuf::Clear for InsertCellsResponse {
     fn clear(&mut self) {
-        self.num_inserted = 0;
+        self.cells.clear();
         self.unknown_fields.clear();
     }
 }
@@ -1449,14 +1463,14 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x18\x02\x20\x01(\x05R\x03col\x12\x14\n\x05value\x18\x03\x20\x01(\tR\x05\
     value\x12#\n\rdisplay_value\x18\x04\x20\x01(\tR\x0cdisplayValue\"C\n\x12\
     InsertCellsRequest\x12-\n\x05cells\x18\x01\x20\x03(\x0b2\x17.spreadsheet\
-    .InsertCellR\x05cells\"8\n\x13InsertCellsResponse\x12!\n\x0cnum_inserted\
-    \x18\x01\x20\x01(\x05R\x0bnumInserted\"8\n\x0fGetCellsRequest\x12%\n\x04\
-    rect\x18\x01\x20\x01(\x0b2\x11.spreadsheet.RectR\x04rect\";\n\x10GetCell\
-    sResponse\x12'\n\x05cells\x18\x01\x20\x03(\x0b2\x11.spreadsheet.CellR\
-    \x05cells2\xab\x01\n\x0eSpreadsheetAPI\x12P\n\x0bInsertCells\x12\x1f.spr\
-    eadsheet.InsertCellsRequest\x1a\x20.spreadsheet.InsertCellsResponse\x12G\
-    \n\x08GetCells\x12\x1c.spreadsheet.GetCellsRequest\x1a\x1d.spreadsheet.G\
-    etCellsResponseb\x06proto3\
+    .InsertCellR\x05cells\">\n\x13InsertCellsResponse\x12'\n\x05cells\x18\
+    \x01\x20\x03(\x0b2\x11.spreadsheet.CellR\x05cells\"8\n\x0fGetCellsReques\
+    t\x12%\n\x04rect\x18\x01\x20\x01(\x0b2\x11.spreadsheet.RectR\x04rect\";\
+    \n\x10GetCellsResponse\x12'\n\x05cells\x18\x01\x20\x03(\x0b2\x11.spreads\
+    heet.CellR\x05cells2\xab\x01\n\x0eSpreadsheetAPI\x12P\n\x0bInsertCells\
+    \x12\x1f.spreadsheet.InsertCellsRequest\x1a\x20.spreadsheet.InsertCellsR\
+    esponse\x12G\n\x08GetCells\x12\x1c.spreadsheet.GetCellsRequest\x1a\x1d.s\
+    preadsheet.GetCellsResponseb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

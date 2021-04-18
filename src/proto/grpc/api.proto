@@ -32,7 +32,7 @@ message InsertCellsRequest {
 }
 
 message InsertCellsResponse {
-    int32 num_inserted = 1;
+    repeated Cell cells = 1;
 }
 
 message GetCellsRequest {
