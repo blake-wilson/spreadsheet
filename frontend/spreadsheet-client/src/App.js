@@ -3,14 +3,19 @@ import './App.css';
 
 import {InsertCell, InsertCellsRequest, InsertCellsResponse} from './api_pb.js';
 import {SpreadsheetAPIClient} from './api_grpc_web_pb.js';
+import React, {Component} from 'react';
 
 let apiClient = new SpreadsheetAPIClient('http://' + window.location.hostname + ':8080',
                                null, null);
 
-function App(props) {
+class App extends React.Component {
 
+  constructor(props) {
+      super(props);
+      this.state = {table: {}};
+  }
 
-  function handleKeyDown(e) {
+  handleKeyDown(e) {
     if (e.keyCode !== 13) {
           return;
     }
@@ -29,29 +34,35 @@ function App(props) {
                     `, message = "${err.message}"`);
       } else {
           console.log("inserted " + response.getCellsList() + " cells");
+          for (const c of response.getCellsList()) {
+              console.log(c.getValue());
+              target.innerText = c.getDisplayValue()
+          }
       }
     });
   }
 
-  const items = [];
-  for (let i = 0; i < props.numRows; i++) {
-      const cells = [];
-      for (let j = 0; j < props.numCols; j++) {
-          console.log("i:",i, "j", j);
-          cells.push(<td contenteditable='true'
-              height="20px" width="72px" row={i.toString()} col={j.toString()} onKeyDown={handleKeyDown}></td>);
-      }
-      items.push(<tr>{cells}</tr>);
+  render() {
+    const items = [];
+    for (let i = 0; i < this.props.numRows; i++) {
+        const cells = [];
+        for (let j = 0; j < this.props.numCols; j++) {
+            console.log("i:",i, "j", j);
+            cells.push(<td contenteditable='true'
+                height="20px" width="72px" row={i.toString()} col={j.toString()} onKeyDown={this.handleKeyDown}></td>);
+        }
+        items.push(<tr>{cells}</tr>);
+    }
+    return (
+      <div className="App">
+        <header className="App-header">
+          <table border="1px solid white"> 
+              { items }
+          </table>
+        </header>
+      </div>
+    );
   }
-  return (
-    <div className="App">
-      <header className="App-header">
-        <table border="1px solid white"> 
-            { items }
-        </table>
-      </header>
-    </div>
-  );
 }
 
 export default App;
