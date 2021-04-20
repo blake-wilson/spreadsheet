@@ -68,7 +68,11 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
         }
         ASTNode::Ref(cell_ref) => {
             println!("evaluating ref {:?}", cell_ref);
-            let mut tokens = super::lexer::lex(&ctx.get_cell(cell_ref.row, cell_ref.col).value);
+            let mut cell_value = ctx.get_cell(cell_ref.row, cell_ref.col).value;
+            if cell_value.starts_with('=') {
+                cell_value = cell_value.strip_prefix('=').unwrap().to_string();
+            }
+            let mut tokens = super::lexer::lex(&cell_value);
             let parsed_val = parse(&mut tokens).unwrap();
             evaluate_internal(parsed_val, ctx)
         }

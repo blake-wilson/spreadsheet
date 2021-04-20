@@ -38,10 +38,14 @@ impl CellsService for MemoryCellsService {
 
         for c in cells {
             let mut cc = c.clone();
-            let mut tokens = parser::lex(&c.value);
-            let formula = parser::parse(&mut tokens)?;
-            let display_value = parser::evaluate(formula, self);
-            cc.display_value = display_value;
+            if cc.is_formula() {
+                let mut tokens = parser::lex(&c.value[1..]);
+                let formula = parser::parse(&mut tokens)?;
+                let display_value = parser::evaluate(formula, self);
+                cc.display_value = display_value;
+            } else {
+                cc.display_value = cc.value.clone();
+            }
 
             let idx = cc.row * self.num_cols + cc.col;
             let curr_cell = self.data.get(idx as usize).unwrap();
