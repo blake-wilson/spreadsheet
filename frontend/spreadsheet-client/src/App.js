@@ -1,12 +1,10 @@
 import logo from './logo.svg';
 import './App.css';
+import TableCell from './TableCell';
 
 import {InsertCell, InsertCellsRequest, InsertCellsResponse} from './api_pb.js';
-import {SpreadsheetAPIClient} from './api_grpc_web_pb.js';
 import React, {Component} from 'react';
 
-let apiClient = new SpreadsheetAPIClient('http://' + window.location.hostname + ':8080',
-                               null, null);
 
 class App extends React.Component {
 
@@ -15,32 +13,6 @@ class App extends React.Component {
       this.state = {table: {}};
   }
 
-  handleKeyDown(e) {
-    if (e.keyCode !== 13) {
-          return;
-    }
-    e.preventDefault();
-
-    var c1 = new InsertCell();
-    let target = e.target;
-    c1.setRow(target.getAttribute('row'));
-    c1.setCol(target.getAttribute('col'));
-    c1.setValue(target.textContent);
-    var request = new InsertCellsRequest();
-    request.setCellsList([c1]);
-    apiClient.insertCells(request, {}, (err, response) => {
-    if (err) {
-        console.log(`Unexpected error for insertCells: code = ${err.code}` +
-                    `, message = "${err.message}"`);
-      } else {
-          console.log("inserted " + response.getCellsList() + " cells");
-          for (const c of response.getCellsList()) {
-              console.log(c.getValue());
-              target.innerText = c.getDisplayValue()
-          }
-      }
-    });
-  }
 
   render() {
     const items = [];
@@ -48,8 +20,7 @@ class App extends React.Component {
         const cells = [];
         for (let j = 0; j < this.props.numCols; j++) {
             console.log("i:",i, "j", j);
-            cells.push(<td contenteditable='true'
-                height="20px" width="72px" row={i.toString()} col={j.toString()} onKeyDown={this.handleKeyDown}></td>);
+            cells.push(<TableCell row={i} col={j} onKeyDown={this.handleKeyDown} />);
         }
         items.push(<tr>{cells}</tr>);
     }
