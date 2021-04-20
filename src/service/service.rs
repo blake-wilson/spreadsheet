@@ -23,7 +23,7 @@ impl EvalContext for MemoryCellsService {
     fn get_cell(&self, row: i32, col: i32) -> models::Cell {
         println!("getting cell at row {} col {}", row, col);
         self.data
-            .get((row * self.num_cols * col) as usize)
+            .get((row * self.num_cols + col) as usize)
             .unwrap()
             .clone()
     }
