@@ -72,7 +72,7 @@ mod tests {
                 val: "40".to_string(),
             },
         ];
-        let node = parse(tokens);
+        let node = parse(tokens).unwrap();
 
         assert_eq!(
             node,
@@ -120,7 +120,7 @@ mod tests {
                 val: ")".to_string(),
             },
         ];
-        let node = parse(tokens);
+        let node = parse(tokens).unwrap();
 
         assert_eq!(
             node,
@@ -136,5 +136,15 @@ mod tests {
                 ],
             }
         )
+    }
+
+    #[test]
+    fn test_parse_cell_ref() {
+        let tokens = &mut vec![Token {
+            kind: TokenKind::ID,
+            val: "B1".to_string(),
+        }];
+        let node = parse(tokens).unwrap();
+        assert_eq!(node, ASTNode::Ref(CellRef { col: 1, row: 0 }));
     }
 }

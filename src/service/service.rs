@@ -1,4 +1,5 @@
 use super::super::models;
+use super::super::models::context::EvalContext;
 use super::super::parser;
 
 pub trait CellsService {
@@ -18,6 +19,16 @@ pub struct MemoryCellsService {
     data: Vec<models::Cell>,
 }
 
+impl EvalContext for MemoryCellsService {
+    fn get_cell(&self, row: i32, col: i32) -> models::Cell {
+        println!("getting cell at row {} col {}", row, col);
+        self.data
+            .get((row * self.num_cols * col) as usize)
+            .unwrap()
+            .clone()
+    }
+}
+
 impl CellsService for MemoryCellsService {
     fn insert_cells(
         &mut self,
@@ -29,7 +40,7 @@ impl CellsService for MemoryCellsService {
             let mut cc = c.clone();
             let mut tokens = parser::lex(&c.value);
             let formula = parser::parse(&mut tokens)?;
-            let display_value = parser::evaluate(formula);
+            let display_value = parser::evaluate(formula, self);
             cc.display_value = display_value;
 
             let idx = cc.row * self.num_cols + cc.col;
@@ -54,6 +65,7 @@ impl CellsService for MemoryCellsService {
                 result_cells.push(c);
             }
         }
+        println!("got cells {:?}", result_cells);
         result_cells
     }
 }

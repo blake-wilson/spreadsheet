@@ -2,12 +2,6 @@ use std::iter::Peekable;
 use std::vec::Vec;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct CellRef {
-    pub col: i32,
-    pub row: i32,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TokenKind {
     LParen,
     RParen,
@@ -15,8 +9,6 @@ pub enum TokenKind {
     Number,
     BinaryExpr,
     Comma,
-    Ref(CellRef),
-    CellRange(CellRef, CellRef),
     ID,
 }
 

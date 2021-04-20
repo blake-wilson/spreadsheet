@@ -42,6 +42,7 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
             let cells = insert_cells_to_models(req.get_cells());
             let mut cs = self.cells_service.lock().unwrap();
             inserted_cells = cs.insert_cells(&cells).unwrap();
+            println!("inserted cells: {:?}", inserted_cells);
         }
         let mut resp = api::InsertCellsResponse::default();
         resp.set_cells(protobuf::RepeatedField::from_vec(model_cells_to_api(
@@ -63,6 +64,7 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
         let cells: Vec<models::Cell>;
         {
             let cs = self.cells_service.lock().unwrap();
+            println!("getting cells\n\n");
             cells = cs.get_cells(rect);
         }
         let mut resp = api::GetCellsResponse::default();

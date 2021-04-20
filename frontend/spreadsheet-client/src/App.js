@@ -11,7 +11,7 @@ function App(props) {
 
 
   function handleKeyDown(e) {
-    if (e.keyCode != 13) {
+    if (e.keyCode !== 13) {
           return;
     }
     e.preventDefault();
@@ -25,7 +25,7 @@ function App(props) {
     request.setCellsList([c1]);
     apiClient.insertCells(request, {}, (err, response) => {
     if (err) {
-        console.log(`Unexpected error for sayHello: code = ${err.code}` +
+        console.log(`Unexpected error for insertCells: code = ${err.code}` +
                     `, message = "${err.message}"`);
       } else {
           console.log("inserted " + response.getCellsList() + " cells");

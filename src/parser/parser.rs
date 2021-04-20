@@ -1,3 +1,4 @@
+use super::super::models::EvalContext;
 use super::lexer::*;
 
 #[derive(Debug, PartialEq)]
@@ -9,8 +10,8 @@ pub enum Operator {
 
 #[derive(Debug, PartialEq)]
 pub struct CellRef {
-    col: i32,
-    row: i32,
+    pub col: i32,
+    pub row: i32,
 }
 
 #[derive(Debug, PartialEq)]
@@ -43,20 +44,20 @@ enum EvalResult {
 }
 
 // evalute gets the display value for the provided AST
-pub fn evaluate(n: ASTNode) -> String {
-    let res = evaluate_internal(n);
+pub fn evaluate(n: ASTNode, ctx: &dyn EvalContext) -> String {
+    let res = evaluate_internal(n, ctx);
     match res {
         EvalResult::Numeric(n) => n.to_string(),
         EvalResult::NonNumeric(s) => s,
     }
 }
 
-fn evaluate_internal(n: ASTNode) -> EvalResult {
+fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
     match n {
         ASTNode::Empty => EvalResult::NonNumeric("".to_owned()),
         ASTNode::Number(n) => EvalResult::Numeric(n),
         ASTNode::BinaryExpr { op, lhs, rhs } => {
-            match (evaluate_internal(*lhs), evaluate_internal(*rhs)) {
+            match (evaluate_internal(*lhs, ctx), evaluate_internal(*rhs, ctx)) {
                 (EvalResult::Numeric(n1), EvalResult::Numeric(n2)) => match op {
                     Operator::Add => EvalResult::Numeric(n1 + n2),
                     Operator::Subtract => EvalResult::Numeric(n1 - n2),
@@ -64,6 +65,12 @@ fn evaluate_internal(n: ASTNode) -> EvalResult {
                 },
                 _ => EvalResult::Numeric(0f64),
             }
+        }
+        ASTNode::Ref(cell_ref) => {
+            println!("evaluating ref {:?}", cell_ref);
+            let mut tokens = super::lexer::lex(&ctx.get_cell(cell_ref.row, cell_ref.col).value);
+            let parsed_val = parse(&mut tokens).unwrap();
+            evaluate_internal(parsed_val, ctx)
         }
         _ => EvalResult::NonNumeric("".to_owned()),
     }
@@ -79,14 +86,9 @@ pub fn parse(tokens: &mut Vec<Token>) -> Result<ASTNode, &'static str> {
         TokenKind::ID => match tokens.get(0) {
             Some(token) => match token.kind {
                 TokenKind::LParen => Ok(parse_function(&fst, tokens)),
-                TokenKind::Colon => parse_cell_ref_or_range(&fst, tokens),
-                _ => {
-                    panic!("unimplemented");
-                }
+                _ => parse_cell_ref_or_range(&fst, tokens),
             },
-            _ => {
-                panic!("unimplemented");
-            }
+            None => parse_cell_ref_or_range(&fst, tokens),
         },
         x => {
             panic!("unrecognized token kind {:?}", x);
@@ -122,15 +124,20 @@ pub fn parse_cell_ref_or_range(
     tokens: &mut Vec<Token>,
 ) -> Result<ASTNode, &'static str> {
     let start = parse_cell_ref(curr)?;
-    let next = tokens.get(0).unwrap();
+    let next = tokens.get(0);
 
-    if next.kind != TokenKind::Colon {
-        return Ok(ASTNode::Ref(start));
+    match next {
+        Some(t) => {
+            if t.kind != TokenKind::Colon {
+                return Ok(ASTNode::Ref(start));
+            }
+            tokens.remove(0);
+            let stop = parse_cell_ref(tokens.get(0).unwrap())?;
+            tokens.remove(0);
+            Ok(ASTNode::Range { start, stop })
+        }
+        None => Ok(ASTNode::Ref(start)),
     }
-    tokens.remove(0);
-    let stop = parse_cell_ref(tokens.get(0).unwrap())?;
-    tokens.remove(0);
-    Ok(ASTNode::Range { start, stop })
 }
 
 pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> ASTNode {
@@ -182,6 +189,7 @@ fn parse_cell_ref(curr: &Token) -> Result<CellRef, &'static str> {
     let mut row_str = "".to_string();
 
     let mut val = String::new();
+    println!("{:?}", curr.val.chars());
     for c in curr.val.chars() {
         if !col_specified && (c < 'A' || c > 'z') {
             return Err("expected a letter but did not find one for an ID");
@@ -203,8 +211,10 @@ fn parse_cell_ref(curr: &Token) -> Result<CellRef, &'static str> {
         val.push(c);
     }
 
+    println!("row number: {}", row_str.parse::<i32>().unwrap() - 1);
     Ok(CellRef {
-        row: row_str.parse::<i32>().unwrap(),
+        // rows here are zero indexed, but one indexed in AST representation
+        row: row_str.parse::<i32>().unwrap() - 1,
         col: col_letters_to_num(&col_str),
     })
 }
@@ -212,8 +222,11 @@ fn parse_cell_ref(curr: &Token) -> Result<CellRef, &'static str> {
 fn col_letters_to_num(letters: &str) -> i32 {
     let upper = letters.to_uppercase();
     let mut total: i32 = 0;
+    let mut mult = 1;
     for c in upper.chars() {
-        total += (c as i32) - 40;
+        total += ((c as i32) - 65) * mult;
+        mult += 1;
     }
+    println!("col number: {}", total);
     total
 }
