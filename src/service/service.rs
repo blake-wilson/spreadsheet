@@ -37,24 +37,20 @@ impl CellsService for MemoryCellsService {
         let mut ret_cells = vec![];
 
         for c in cells {
-            let mut cc = c.clone();
-            if cc.is_formula() {
-                let mut tokens = parser::lex(&c.value[1..]);
-                let formula = parser::parse(&mut tokens)?;
-                let display_value = parser::evaluate(formula, self);
+            self.data
+                .insert((c.row * self.num_cols + c.col) as usize, c.clone());
+        }
+
+        // Recalculate after inserting values for all cells
+        for c in cells {
+            // Only insert if we are updating value or value has been recomputed
+            let formula = parser::parse(&c.value)?;
+            let display_value = parser::evaluate(formula, self);
+            if display_value != c.display_value {
+                let mut cc = c.clone();
                 cc.display_value = display_value;
-            } else {
-                cc.display_value = cc.value.clone();
-            }
 
-            let idx = cc.row * self.num_cols + cc.col;
-            let curr_cell = self.data.get(idx as usize).unwrap();
-
-            if curr_cell.value != cc.value || curr_cell.display_value != cc.display_value {
-                // Only insert if we are updating value or value has been recomputed
-                ret_cells.push(cc.clone());
-                self.data
-                    .insert((cc.row * self.num_cols + cc.col) as usize, cc);
+                ret_cells.push(cc);
             }
         }
         Ok(ret_cells)

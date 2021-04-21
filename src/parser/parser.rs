@@ -18,6 +18,7 @@ pub struct CellRef {
 pub enum ASTNode {
     Empty,
     Number(f64),
+    Text(String),
     UnaryExpr {
         op: Operator,
         child: Box<ASTNode>,
@@ -43,6 +44,18 @@ enum EvalResult {
     NonNumeric(String),
 }
 
+pub fn parse(input: &str) -> Result<ASTNode, &'static str> {
+    if input.starts_with('=') {
+        let cell_value = input.strip_prefix('=').unwrap().to_string();
+        let mut tokens = super::lexer::lex(&cell_value);
+        return parse_internal(&mut tokens);
+    }
+    match input.parse::<f64>() {
+        Ok(num) => Ok(ASTNode::Number(num)),
+        _ => Ok(ASTNode::Text(input.to_owned())),
+    }
+}
+
 // evalute gets the display value for the provided AST
 pub fn evaluate(n: ASTNode, ctx: &dyn EvalContext) -> String {
     let res = evaluate_internal(n, ctx);
@@ -56,6 +69,7 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
     match n {
         ASTNode::Empty => EvalResult::NonNumeric("".to_owned()),
         ASTNode::Number(n) => EvalResult::Numeric(n),
+        ASTNode::Text(t) => EvalResult::NonNumeric(t),
         ASTNode::BinaryExpr { op, lhs, rhs } => {
             match (evaluate_internal(*lhs, ctx), evaluate_internal(*rhs, ctx)) {
                 (EvalResult::Numeric(n1), EvalResult::Numeric(n2)) => match op {
@@ -73,20 +87,21 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
                 cell_value = cell_value.strip_prefix('=').unwrap().to_string();
             }
             let mut tokens = super::lexer::lex(&cell_value);
-            let parsed_val = parse(&mut tokens).unwrap();
+            let parsed_val = parse_internal(&mut tokens).unwrap();
             evaluate_internal(parsed_val, ctx)
         }
         _ => EvalResult::NonNumeric("".to_owned()),
     }
 }
 
-pub fn parse(tokens: &mut Vec<Token>) -> Result<ASTNode, &'static str> {
+fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, &'static str> {
     if tokens.len() == 0 {
         return Ok(ASTNode::Empty);
     }
     let fst = tokens.remove(0);
     match fst.kind {
         TokenKind::Number => parse_number(&fst, tokens),
+        TokenKind::Text => Ok(ASTNode::Text(fst.val)),
         TokenKind::ID => match tokens.get(0) {
             Some(token) => match token.kind {
                 TokenKind::LParen => Ok(parse_function(&fst, tokens)),
@@ -109,7 +124,7 @@ pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, &'
     match next.kind {
         TokenKind::BinaryExpr => {
             tokens.remove(0);
-            let rhs = parse(tokens)?;
+            let rhs = parse_internal(tokens)?;
             Ok(ASTNode::BinaryExpr {
                 op: get_operator(&next.val),
                 lhs: Box::new(num_node),
@@ -130,17 +145,35 @@ pub fn parse_cell_ref_or_range(
     let start = parse_cell_ref(curr)?;
     let next = tokens.get(0);
 
-    match next {
-        Some(t) => {
-            if t.kind != TokenKind::Colon {
-                return Ok(ASTNode::Ref(start));
+    let cell_ref = match next {
+        Some(t) => match t.kind {
+            TokenKind::Colon => {
+                tokens.remove(0);
+                let stop = parse_cell_ref(tokens.get(0).unwrap())?;
+                tokens.remove(0);
+                Ok(ASTNode::Range { start, stop })
             }
-            tokens.remove(0);
-            let stop = parse_cell_ref(tokens.get(0).unwrap())?;
-            tokens.remove(0);
-            Ok(ASTNode::Range { start, stop })
-        }
+            _ => Ok(ASTNode::Ref(start)),
+        },
         None => Ok(ASTNode::Ref(start)),
+    }?;
+
+    let next = tokens.get(0);
+    match next {
+        Some(t) => match t.kind {
+            TokenKind::BinaryExpr => {
+                let val = t.val.clone();
+                tokens.remove(0);
+                let rhs = parse_internal(tokens)?;
+                Ok(ASTNode::BinaryExpr {
+                    op: get_operator(&val),
+                    lhs: Box::new(cell_ref),
+                    rhs: Box::new(rhs),
+                })
+            }
+            _ => Ok(cell_ref),
+        },
+        None => Ok(cell_ref),
     }
 }
 
@@ -165,8 +198,9 @@ pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> ASTNode {
 }
 
 pub fn parse_function_argument(tokens: &mut Vec<Token>) -> ASTNode {
-    let arg = parse(tokens);
+    let arg = parse_internal(tokens);
     let token = tokens.get(0).unwrap();
+    println!("token: {:?}", token);
     if token.kind != TokenKind::RParen && token.kind != TokenKind::Comma {
         panic!("expected comma or right paren after function arg")
     }
