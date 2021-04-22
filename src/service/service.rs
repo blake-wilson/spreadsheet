@@ -18,11 +18,21 @@ pub struct MemoryCellsService {
 
 impl EvalContext for MemoryCellsService {
     fn get_cell(&self, row: i32, col: i32) -> models::Cell {
-        println!("getting cell at row {} col {}", row, col);
+        println!("getting at index {}", row * self.num_cols + col);
+        println!(
+            "getting cell at row {} col {}: {:?}",
+            row,
+            col,
+            self.data.get((row * self.num_cols + col) as usize).unwrap()
+        );
         self.data
             .get((row * self.num_cols + col) as usize)
             .unwrap()
             .clone()
+    }
+
+    fn get_cells(&self, rect: models::Rect) -> Vec<models::Cell> {
+        <_ as CellsService>::get_cells(self, rect)
     }
 }
 
@@ -31,6 +41,7 @@ impl CellsService for MemoryCellsService {
         let mut ret_cells = vec![];
 
         for c in cells {
+            println!("insert at index {}", c.row * self.num_cols + c.col);
             self.data
                 .insert((c.row * self.num_cols + c.col) as usize, c.clone());
         }
@@ -44,6 +55,8 @@ impl CellsService for MemoryCellsService {
             if display_value != c.display_value {
                 cc.display_value = display_value;
             }
+            self.data
+                .insert((cc.row * self.num_cols + cc.col) as usize, cc.clone());
             ret_cells.push(cc);
         }
         Ok(ret_cells)

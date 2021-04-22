@@ -1,10 +1,18 @@
 import React, {Component} from 'react';
-import {InsertCell, InsertCellsRequest, InsertCellsResponse} from './api_pb.js';
+import {Rect, InsertCell, GetCellsRequest, InsertCellsRequest, InsertCellsResponse} from './api_pb.js';
 import {SpreadsheetAPIClient} from './api_grpc_web_pb.js';
 
 let apiClient = new SpreadsheetAPIClient('http://' + window.location.hostname + ':8080',
                                null, null);
 
+      var request = new GetCellsRequest();
+      var r = new Rect();
+      r.setStartRow(0);
+      r.setStartCol(0);
+      r.setStopRow(5);
+      r.setStopCol(1);
+      request.setRect(r);
+      apiClient.getCells(request, {}, (err, response) => {console.log(response)});
 class TableCell extends React.Component {
 
   constructor(props) {

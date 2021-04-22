@@ -1,4 +1,5 @@
 use super::super::models::EvalContext;
+use super::functions::*;
 use super::lexer::*;
 
 #[derive(Debug, PartialEq)]
@@ -36,9 +37,10 @@ pub enum ASTNode {
     },
 }
 
-enum EvalResult {
+pub enum EvalResult {
     Numeric(f64),
     NonNumeric(String),
+    List(Vec<Box<EvalResult>>),
 }
 
 pub fn parse(input: &str) -> Result<ASTNode, String> {
@@ -59,6 +61,7 @@ pub fn evaluate(n: ASTNode, ctx: &dyn EvalContext) -> String {
     match res {
         EvalResult::Numeric(n) => n.to_string(),
         EvalResult::NonNumeric(s) => s,
+        EvalResult::List(_) => "".to_owned(),
     }
 }
 
@@ -78,8 +81,23 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
                 _ => EvalResult::Numeric(0f64),
             }
         }
+        ASTNode::Function { name, args } => {
+            println!("evaluating function {}", name);
+            let mut evaluated_args = vec![];
+            for arg in args {
+                let eval_res = evaluate_internal(*arg, ctx);
+                match eval_res {
+                    EvalResult::List(results) => {
+                        for res in results {
+                            evaluated_args.push(*res);
+                        }
+                    }
+                    _ => evaluated_args.push(eval_res),
+                }
+            }
+            evaluate_function(&name, evaluated_args)
+        }
         ASTNode::Ref(cell_ref) => {
-            println!("evaluating ref {:?}", cell_ref);
             let mut cell_value = ctx.get_cell(cell_ref.row, cell_ref.col).value;
             if cell_value.starts_with('=') {
                 cell_value = cell_value.strip_prefix('=').unwrap().to_string();
@@ -88,7 +106,17 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
             let parsed_val = parse_internal(&mut tokens).unwrap();
             evaluate_internal(parsed_val, ctx)
         }
-        _ => EvalResult::NonNumeric("".to_owned()),
+        ASTNode::Range { start, stop } => {
+            println!("evaluate range: {:?}, {:?}", start, stop);
+            let mut results = vec![];
+            for i in start.row..stop.row + 1 {
+                for j in start.col..stop.col + 1 {
+                    let res = evaluate_internal(ASTNode::Ref(CellRef { row: i, col: j }), ctx);
+                    results.push(Box::new(res));
+                }
+            }
+            EvalResult::List(results)
+        }
     }
 }
 
