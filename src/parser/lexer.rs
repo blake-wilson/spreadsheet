@@ -77,7 +77,7 @@ pub fn lex(input: &str) -> Vec<Token> {
                     val: c.to_string(),
                 })
             }
-            '*' | '+' => {
+            '*' | '+' | '-' | '/' => {
                 it.next();
                 Ok(Token {
                     kind: TokenKind::BinaryExpr,

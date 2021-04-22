@@ -6,6 +6,7 @@ pub enum Operator {
     Add,
     Subtract,
     Multiply,
+    Divide,
 }
 
 #[derive(Debug, PartialEq)]
@@ -19,10 +20,6 @@ pub enum ASTNode {
     Empty,
     Number(f64),
     Text(String),
-    UnaryExpr {
-        op: Operator,
-        child: Box<ASTNode>,
-    },
     BinaryExpr {
         op: Operator,
         lhs: Box<ASTNode>,
@@ -76,6 +73,7 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
                     Operator::Add => EvalResult::Numeric(n1 + n2),
                     Operator::Subtract => EvalResult::Numeric(n1 - n2),
                     Operator::Multiply => EvalResult::Numeric(n1 * n2),
+                    Operator::Divide => EvalResult::Numeric(n1 / n2),
                 },
                 _ => EvalResult::Numeric(0f64),
             }
@@ -124,7 +122,7 @@ pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, St
             tokens.remove(0);
             let rhs = parse_internal(tokens)?;
             Ok(ASTNode::BinaryExpr {
-                op: get_operator(&next.val),
+                op: get_operator(&next.val)?,
                 lhs: Box::new(num_node),
                 rhs: Box::new(rhs),
             })
@@ -161,7 +159,7 @@ pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<
                 tokens.remove(0);
                 let rhs = parse_internal(tokens)?;
                 Ok(ASTNode::BinaryExpr {
-                    op: get_operator(&val),
+                    op: get_operator(&val)?,
                     lhs: Box::new(cell_ref),
                     rhs: Box::new(rhs),
                 })
@@ -185,7 +183,7 @@ pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, 
 
     let mut args = Vec::new();
     while tokens.get(0).unwrap().kind != TokenKind::RParen {
-        let arg = parse_function_argument(tokens);
+        let arg = parse_function_argument(tokens)?;
         args.push(Box::new(arg));
     }
 
@@ -195,25 +193,25 @@ pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, 
     })
 }
 
-pub fn parse_function_argument(tokens: &mut Vec<Token>) -> ASTNode {
+pub fn parse_function_argument(tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
     let arg = parse_internal(tokens);
     let token = tokens.get(0).unwrap();
-    println!("token: {:?}", token);
     if token.kind != TokenKind::RParen && token.kind != TokenKind::Comma {
-        panic!("expected comma or right paren after function arg")
+        return Err("expected comma or right paren after function arg".to_owned());
     }
     if token.kind == TokenKind::Comma {
         tokens.remove(0);
     }
-    arg.unwrap()
+    Ok(arg.unwrap())
 }
 
-pub fn get_operator(val: &str) -> Operator {
+pub fn get_operator(val: &str) -> Result<Operator, String> {
     match val {
-        "+" => Operator::Add,
-        "-" => Operator::Subtract,
-        "*" => Operator::Multiply,
-        x => panic!("unrecognized operator {:?}", x),
+        "+" => Ok(Operator::Add),
+        "-" => Ok(Operator::Subtract),
+        "*" => Ok(Operator::Multiply),
+        "/" => Ok(Operator::Divide),
+        x => Err(format!("unrecognized operator {:?}", x).to_owned()),
     }
 }
 
@@ -263,6 +261,5 @@ fn col_letters_to_num(letters: &str) -> i32 {
         total += ((c as i32) - 65) * mult;
         mult += 1;
     }
-    println!("col number: {}", total);
     total
 }
