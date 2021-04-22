@@ -4,10 +4,7 @@ use super::super::parser;
 
 pub trait CellsService {
     // insert_cells inserts the provided list of cells into the store.
-    fn insert_cells(
-        &mut self,
-        cells: &Vec<models::Cell>,
-    ) -> Result<Vec<models::Cell>, &'static str>;
+    fn insert_cells(&mut self, cells: &Vec<models::Cell>) -> Result<Vec<models::Cell>, String>;
 
     // get_cells returns a Vector of cells in the provided rectangle
     fn get_cells(&self, r: models::Rect) -> Vec<models::Cell>;
@@ -30,10 +27,7 @@ impl EvalContext for MemoryCellsService {
 }
 
 impl CellsService for MemoryCellsService {
-    fn insert_cells(
-        &mut self,
-        cells: &Vec<models::Cell>,
-    ) -> Result<Vec<models::Cell>, &'static str> {
+    fn insert_cells(&mut self, cells: &Vec<models::Cell>) -> Result<Vec<models::Cell>, String> {
         let mut ret_cells = vec![];
 
         for c in cells {

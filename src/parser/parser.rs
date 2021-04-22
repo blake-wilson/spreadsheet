@@ -44,7 +44,7 @@ enum EvalResult {
     NonNumeric(String),
 }
 
-pub fn parse(input: &str) -> Result<ASTNode, &'static str> {
+pub fn parse(input: &str) -> Result<ASTNode, String> {
     if input.starts_with('=') {
         let cell_value = input.strip_prefix('=').unwrap().to_string();
         let mut tokens = super::lexer::lex(&cell_value);
@@ -94,7 +94,7 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
     }
 }
 
-fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, &'static str> {
+fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
     if tokens.len() == 0 {
         return Ok(ASTNode::Empty);
     }
@@ -104,18 +104,16 @@ fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, &'static str> {
         TokenKind::Text => Ok(ASTNode::Text(fst.val)),
         TokenKind::ID => match tokens.get(0) {
             Some(token) => match token.kind {
-                TokenKind::LParen => Ok(parse_function(&fst, tokens)),
+                TokenKind::LParen => parse_function(&fst, tokens),
                 _ => parse_cell_ref_or_range(&fst, tokens),
             },
             None => parse_cell_ref_or_range(&fst, tokens),
         },
-        x => {
-            panic!("unrecognized token kind {:?}", x);
-        }
+        x => Err(format!("unrecognized token kind {:?}", x)),
     }
 }
 
-pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, &'static str> {
+pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
     let num_node = ASTNode::Number(curr.val.parse::<f64>().unwrap());
     if tokens.len() == 0 {
         return Ok(num_node);
@@ -138,10 +136,7 @@ pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, &'
     }
 }
 
-pub fn parse_cell_ref_or_range(
-    curr: &Token,
-    tokens: &mut Vec<Token>,
-) -> Result<ASTNode, &'static str> {
+pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
     let start = parse_cell_ref(curr)?;
     let next = tokens.get(0);
 
@@ -151,12 +146,12 @@ pub fn parse_cell_ref_or_range(
                 tokens.remove(0);
                 let stop = parse_cell_ref(tokens.get(0).unwrap())?;
                 tokens.remove(0);
-                Ok(ASTNode::Range { start, stop })
+                ASTNode::Range { start, stop }
             }
-            _ => Ok(ASTNode::Ref(start)),
+            _ => ASTNode::Ref(start),
         },
-        None => Ok(ASTNode::Ref(start)),
-    }?;
+        None => ASTNode::Ref(start),
+    };
 
     let next = tokens.get(0);
     match next {
@@ -177,11 +172,14 @@ pub fn parse_cell_ref_or_range(
     }
 }
 
-pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> ASTNode {
+pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
     let next = tokens.get(0).unwrap();
 
     if next.kind != TokenKind::LParen {
-        panic!("unexpected token kind after function name: {:?}", next.kind);
+        return Err(format!(
+            "unexpected token kind after function name: {:?}",
+            next.kind
+        ));
     }
     tokens.remove(0);
 
@@ -191,10 +189,10 @@ pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> ASTNode {
         args.push(Box::new(arg));
     }
 
-    ASTNode::Function {
+    Ok(ASTNode::Function {
         name: curr.val.clone(),
         args,
-    }
+    })
 }
 
 pub fn parse_function_argument(tokens: &mut Vec<Token>) -> ASTNode {
@@ -219,7 +217,7 @@ pub fn get_operator(val: &str) -> Operator {
     }
 }
 
-fn parse_cell_ref(curr: &Token) -> Result<CellRef, &'static str> {
+fn parse_cell_ref(curr: &Token) -> Result<CellRef, String> {
     let mut col_specified = false;
     let mut row_specified = false;
 
@@ -230,18 +228,18 @@ fn parse_cell_ref(curr: &Token) -> Result<CellRef, &'static str> {
     println!("{:?}", curr.val.chars());
     for c in curr.val.chars() {
         if !col_specified && (c < 'A' || c > 'z') {
-            return Err("expected a letter but did not find one for an ID");
+            return Err("expected a letter but did not find one for an ID".to_owned());
         }
         if c >= 'A' && c <= 'z' {
             if row_specified {
-                return Err("row already specified but found column specifier");
+                return Err("row already specified but found column specifier".to_owned());
             }
             col_specified = true;
             col_str.push(c);
         }
         if c >= '0' && c <= '9' {
             if !col_specified {
-                return Err("col must be specified before row");
+                return Err("col must be specified before row".to_owned());
             }
             row_specified = true;
             row_str.push(c);
