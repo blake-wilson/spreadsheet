@@ -40,12 +40,11 @@ impl CellsService for MemoryCellsService {
             // Only insert if we are updating value or value has been recomputed
             let formula = parser::parse(&c.value)?;
             let display_value = parser::evaluate(formula, self);
+            let mut cc = c.clone();
             if display_value != c.display_value {
-                let mut cc = c.clone();
                 cc.display_value = display_value;
-
-                ret_cells.push(cc);
             }
+            ret_cells.push(cc);
         }
         Ok(ret_cells)
     }
