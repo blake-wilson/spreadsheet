@@ -273,11 +273,10 @@ fn parse_cell_ref(curr: &Token) -> Result<CellRef, String> {
         val.push(c);
     }
 
-    println!("row number: {}", row_str.parse::<i32>().unwrap() - 1);
     Ok(CellRef {
+        col: col_letters_to_num(&col_str),
         // rows here are zero indexed, but one indexed in AST representation
         row: row_str.parse::<i32>().unwrap() - 1,
-        col: col_letters_to_num(&col_str),
     })
 }
 

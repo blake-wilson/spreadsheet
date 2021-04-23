@@ -18,15 +18,8 @@ pub struct MemoryCellsService {
 
 impl EvalContext for MemoryCellsService {
     fn get_cell(&self, row: i32, col: i32) -> models::Cell {
-        println!("getting at index {}", row * self.num_cols + col);
-        println!(
-            "getting cell at row {} col {}: {:?}",
-            row,
-            col,
-            self.data.get((row * self.num_cols + col) as usize).unwrap()
-        );
         self.data
-            .get((row * self.num_cols + col) as usize)
+            .get((row_major_idx(row, col, self.num_cols)) as usize)
             .unwrap()
             .clone()
     }
@@ -41,26 +34,24 @@ impl CellsService for MemoryCellsService {
         let mut ret_cells = vec![];
 
         for c in cells {
-            println!("insert at index {}", c.row * self.num_cols + c.col);
-            self.data
-                .insert((c.row * self.num_cols + c.col) as usize, c.clone());
+            self.data[row_major_idx(c.row, c.col, self.num_cols) as usize] = c.clone();
         }
 
         // Recalculate after inserting values for all cells
         for c in cells {
+            let mut cc = self.get_cell(c.row, c.col);
             // Only insert if we are updating value or value has been recomputed
-            let formula = parser::parse(&c.value)?;
+            let formula = parser::parse(&cc.value)?;
             let display_value = parser::evaluate(formula, self);
-            let mut cc = c.clone();
-            if display_value != c.display_value {
+            if display_value != cc.display_value {
                 cc.display_value = display_value;
             }
-            self.data
-                .insert((cc.row * self.num_cols + cc.col) as usize, cc.clone());
+            self.data[row_major_idx(cc.row, cc.col, self.num_cols) as usize] = cc.clone();
             ret_cells.push(cc);
         }
         Ok(ret_cells)
     }
+
     fn get_cells(&self, r: models::Rect) -> Vec<models::Cell> {
         let mut result_cells: Vec<models::Cell> = Vec::new();
         for row in r.start_row..r.stop_row {
@@ -71,7 +62,6 @@ impl CellsService for MemoryCellsService {
                 result_cells.push(c);
             }
         }
-        println!("got cells {:?}", result_cells);
         result_cells
     }
 }
@@ -79,7 +69,7 @@ impl CellsService for MemoryCellsService {
 impl MemoryCellsService {
     pub fn new(num_rows: i32, num_cols: i32) -> Self {
         MemoryCellsService {
-            num_cols: 26,
+            num_cols,
             data: vec![
                 models::Cell {
                     row: -1,
@@ -91,4 +81,8 @@ impl MemoryCellsService {
             ],
         }
     }
+}
+
+pub fn row_major_idx(row: i32, col: i32, num_cols: i32) -> i32 {
+    (row * num_cols) + col
 }

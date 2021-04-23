@@ -28,7 +28,6 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
         req: api::InsertCellsRequest,
         sink: UnarySink<api::InsertCellsResponse>,
     ) {
-        println!("got request");
         for c in req.get_cells() {
             println!(
                 "inserting cell {:?} at row {:?} and col {:?}",
@@ -64,7 +63,6 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
         let cells: Vec<models::Cell>;
         {
             let cs = self.cells_service.lock().unwrap();
-            println!("getting cells\n\n");
             cells = cs.get_cells(rect);
         }
         let mut resp = api::GetCellsResponse::default();
@@ -89,7 +87,7 @@ fn main() {
     };
     println!("cell: {:?}", c);
 
-    let cells_service = service::MemoryCellsService::new(100, 26);
+    let cells_service = service::MemoryCellsService::new(50, 26);
     let ss_service = SpreadsheetService {
         cells_service: Arc::new(Mutex::new(cells_service)),
     };
