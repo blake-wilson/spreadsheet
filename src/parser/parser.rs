@@ -273,10 +273,21 @@ fn parse_cell_ref(curr: &Token) -> Result<CellRef, String> {
         val.push(c);
     }
 
+    let row = match row_str.parse::<i32>() {
+        Ok(n) => Ok(n),
+        Err(_) => Err(format!("cannot parse row number from {}", row_str)),
+    }?;
+    if row < 0 {
+        return Err(format!(
+            "row number must be a non-negative integer but got {}",
+            row
+        ));
+    }
+
     Ok(CellRef {
         col: col_letters_to_num(&col_str),
         // rows here are zero indexed, but one indexed in AST representation
-        row: row_str.parse::<i32>().unwrap() - 1,
+        row: row - 1,
     })
 }
 
