@@ -18,10 +18,7 @@ pub struct MemoryCellsService {
 
 impl EvalContext for MemoryCellsService {
     fn get_cell(&self, row: i32, col: i32) -> models::Cell {
-        self.data
-            .get((row_major_idx(row, col, self.num_cols)) as usize)
-            .unwrap()
-            .clone()
+        self.get_cell(row, col)
     }
 
     fn get_cells(&self, rect: models::Rect) -> Vec<models::Cell> {
@@ -34,7 +31,7 @@ impl CellsService for MemoryCellsService {
         let mut ret_cells = vec![];
 
         for c in cells {
-            self.data[row_major_idx(c.row, c.col, self.num_cols) as usize] = c.clone();
+            self.set_cell(&c);
         }
 
         // Recalculate after inserting values for all cells
@@ -46,7 +43,7 @@ impl CellsService for MemoryCellsService {
             if display_value != cc.display_value {
                 cc.display_value = display_value;
             }
-            self.data[row_major_idx(cc.row, cc.col, self.num_cols) as usize] = cc.clone();
+            self.set_cell(&cc);
             ret_cells.push(cc);
         }
         Ok(ret_cells)
@@ -81,8 +78,15 @@ impl MemoryCellsService {
             ],
         }
     }
+    pub fn get_cell(&self, row: i32, col: i32) -> models::Cell {
+        self.data[row_major_idx(row, col, self.num_cols) as usize].clone()
+    }
+
+    pub fn set_cell(&mut self, cell: &models::Cell) {
+        self.data[row_major_idx(cell.row, cell.col, self.num_cols) as usize] = cell.clone();
+    }
 }
 
-pub fn row_major_idx(row: i32, col: i32, num_cols: i32) -> i32 {
+fn row_major_idx(row: i32, col: i32, num_cols: i32) -> i32 {
     (row * num_cols) + col
 }
