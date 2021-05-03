@@ -2,39 +2,41 @@ use super::super::models;
 use super::super::models::context::EvalContext;
 use super::super::parser;
 use rstar::RTree;
-
-enum CellOrRange {
-    Cell(models::Cell),
-    Range(models::CellRange),
-}
-
-pub struct CellNode {
-    // dependents are the cells or cell ranges which this cell depends on
-    dependents: Vec<Box<CellNode>>,
-    // dependencies are the cells or cell ranges which depend on this cell
-    dependencies: Vec<Box<CellNode>>,
-
-    range: CellOrRange,
-}
+use rstar::RTreeObject;
 
 pub struct FormulaGraph {
-    rt: RTree<CellNode>,
+    rt: RTree<models::CellRange>,
+
+    dependents_map: std::collections::HashMap<models::CellRange, models::CellLocation>,
+    dependencies_map: std::collections::HashMap<models::CellLocation, models::CellRange>,
 }
 
-impl rstar::RTreeObject for CellNode {
+impl rstar::RTreeObject for models::CellRange {
     type Envelope = rstar::AABB<[i32; 2]>;
     fn envelope(&self) -> Self::Envelope {
-        match &self.range {
-            CellOrRange::Cell(c) => rstar::AABB::from_point([c.row, c.col]),
-            CellOrRange::Range(r) => {
-                rstar::AABB::from_corners([r.start_row, r.start_col], [r.stop_row, r.stop_col])
-            }
-        }
+        rstar::AABB::from_corners(
+            [self.start_row, self.start_col],
+            [self.stop_row, self.stop_col],
+        )
     }
 }
 
 impl FormulaGraph {
-    fn insert_cell(&mut self, cell: models::Cell) {
-        self.rt.insert()
+    fn insert_cell(&mut self, cell: models::Cell, dependencies: Vec<models::CellRange>) {
+        let range = cell.to_range();
+        if !self.rt.contains(&range) {
+            // cell is not yet in the R-Tree
+            self.rt.insert(range.clone())
+        }
+        for d in dependencies {
+            self.dependencies_map.insert(cell.loc(), d);
+        }
+
+        // Find all the dependents and update dependencies map for the inserted cell
+        let existing = self.rt.locate_in_envelope(&range.envelope());
+
+        for e in existing {
+            self.dependents_map.insert(e.clone(), cell.loc());
+        }
     }
 }
