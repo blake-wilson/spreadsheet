@@ -1,3 +1,4 @@
+use super::super::models::CellRange;
 use super::super::models::EvalContext;
 use super::functions::*;
 use super::lexer::*;
@@ -14,6 +15,17 @@ pub enum Operator {
 pub struct CellRef {
     pub col: i32,
     pub row: i32,
+}
+
+impl CellRef {
+    fn to_cell_range(&self) -> CellRange {
+        CellRange {
+            start_row: self.row,
+            start_col: self.col,
+            stop_row: self.row + 1,
+            stop_col: self.col + 1,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -63,6 +75,32 @@ pub fn evaluate(n: ASTNode, ctx: &dyn EvalContext) -> String {
         EvalResult::NonNumeric(s) => s,
         EvalResult::List(_) => "".to_owned(),
     }
+}
+
+pub fn get_refs(n: ASTNode) -> Vec<CellRange> {
+    let mut refs = vec![];
+
+    match n {
+        ASTNode::BinaryExpr { op, lhs, rhs } => {
+            refs.extend(get_refs(*lhs));
+            refs.extend(get_refs(*rhs));
+        }
+        ASTNode::Function { name, args } => {
+            for arg in args {
+                refs.extend(get_refs(*arg))
+            }
+        }
+        ASTNode::Ref(cell_ref) => refs.push(cell_ref.to_cell_range()),
+        ASTNode::Range { start, stop } => refs.push(CellRange {
+            start_row: start.row,
+            start_col: start.col,
+            stop_row: stop.row,
+            stop_col: stop.col,
+        }),
+        _ => (),
+    }
+
+    refs
 }
 
 fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {

@@ -12,6 +12,17 @@ pub struct CellLocation {
     pub col: i32,
 }
 
+impl CellLocation {
+    pub fn to_range(&self) -> CellRange {
+        CellRange {
+            start_row: self.row,
+            stop_row: self.row + 1,
+            start_col: self.col,
+            stop_col: self.col + 1,
+        }
+    }
+}
+
 #[derive(Debug, Eq, Hash, Clone, PartialEq)]
 pub struct CellRange {
     pub start_row: i32,

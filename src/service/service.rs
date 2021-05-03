@@ -1,6 +1,7 @@
 use super::super::models;
 use super::super::models::context::EvalContext;
 use super::super::parser;
+use super::formula_graph::FormulaGraph;
 
 pub trait CellsService {
     // insert_cells inserts the provided list of cells into the store.
@@ -14,6 +15,8 @@ pub struct MemoryCellsService {
     num_cols: i32,
     // data stored in row-major order
     data: Vec<models::Cell>,
+
+    formula_graph: FormulaGraph,
 }
 
 impl EvalContext for MemoryCellsService {
@@ -76,6 +79,7 @@ impl MemoryCellsService {
                 };
                 (num_cols * num_rows) as usize
             ],
+            formula_graph: FormulaGraph::new(),
         }
     }
     pub fn get_cell(&self, row: i32, col: i32) -> models::Cell {
