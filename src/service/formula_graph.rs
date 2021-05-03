@@ -22,11 +22,17 @@ impl rstar::RTreeObject for models::CellRange {
 }
 
 impl FormulaGraph {
-    fn insert_cell(&mut self, cell: models::Cell, dependencies: Vec<models::CellRange>) {
+    // insert_cell inserts the provided cell into the formula graph and returns the affected
+    // cell ranges. These cell ranges should be recomputed
+    fn insert_cell(
+        &mut self,
+        cell: models::Cell,
+        dependencies: Vec<models::CellRange>,
+    ) -> Vec<models::CellRange> {
         let range = cell.to_range();
         if !self.rt.contains(&range) {
             // cell is not yet in the R-Tree
-            self.rt.insert(range.clone())
+            self.rt.insert(range.clone());
         }
         for d in dependencies {
             self.dependencies_map.insert(cell.loc(), d);
@@ -34,9 +40,12 @@ impl FormulaGraph {
 
         // Find all the dependents and update dependencies map for the inserted cell
         let existing = self.rt.locate_in_envelope(&range.envelope());
+        let mut ret = vec![];
 
         for e in existing {
             self.dependents_map.insert(e.clone(), cell.loc());
+            ret.push(e.clone());
         }
+        ret
     }
 }
