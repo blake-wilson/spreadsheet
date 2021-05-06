@@ -18,25 +18,6 @@ struct RTreeNode {
     points_to: models::CellRange,
 }
 
-#[derive(Debug, Eq, Hash, Clone, PartialEq)]
-struct SearchNode {
-    loc: models::CellLocation,
-    visited: bool,
-}
-
-impl SearchNode {
-    fn new_list(locs: Vec<models::CellLocation>) -> Vec<SearchNode> {
-        let mut ret = vec![];
-        for l in locs {
-            ret.push(SearchNode {
-                loc: l,
-                visited: false,
-            })
-        }
-        ret
-    }
-}
-
 impl rstar::RTreeObject for RTreeNode {
     type Envelope = rstar::AABB<[i32; 2]>;
     fn envelope(&self) -> Self::Envelope {
@@ -74,11 +55,6 @@ impl FormulaGraph {
         cell: models::Cell,
         dependencies: Vec<models::CellRange>,
     ) -> Vec<models::CellLocation> {
-        // let range = cell.to_range();
-        // if !self.rt.contains(&range) {
-        //     // cell is not yet in the R-Tree
-        //     self.rt.insert(range.clone());
-        // }
         println!("insert cell {:?}", cell);
         for d in dependencies {
             let to_insert = RTreeNode {
@@ -95,7 +71,6 @@ impl FormulaGraph {
 
         // Find all the dependents and update dependents map for the inserted cell
         let existing = self.rt.locate_in_envelope(&cell.to_range().envelope());
-        // self.rt.locate_all_at_point(&cell.to_range().envelope());
 
         for e in existing {
             println!("add {:?} to dependents map", e);
