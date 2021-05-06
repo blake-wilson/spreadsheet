@@ -40,8 +40,25 @@ impl CellsService for MemoryCellsService {
         // Recalculate after inserting values for all cells
         for c in cells {
             let mut cc = self.get_cell(c.row, c.col);
-            // Only insert if we are updating value or value has been recomputed
+
+            // Update the formula graph and recompute necessary cells
             let formula = parser::parse(&cc.value)?;
+            let refs = parser::get_refs(&formula);
+            println!("refs: {:?}", refs);
+            let mut to_eval = self.formula_graph.insert_cell(cc.clone(), refs);
+            println!("to re-evaluate: {:?}", to_eval);
+
+            while let Some(c) = to_eval.pop() {
+                // We don't need to check refs again here since the formula graph already computed
+                // all the required re-evals.
+                let mut eval_cell = self.get_cell(c.row, c.col).clone();
+                let formula = parser::parse(&eval_cell.value)?;
+                let display_value = parser::evaluate(formula, self);
+                eval_cell.display_value = display_value;
+                self.set_cell(&eval_cell);
+                ret_cells.push(eval_cell);
+            }
+
             let display_value = parser::evaluate(formula, self);
             if display_value != cc.display_value {
                 cc.display_value = display_value;

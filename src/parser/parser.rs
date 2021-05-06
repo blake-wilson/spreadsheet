@@ -77,17 +77,17 @@ pub fn evaluate(n: ASTNode, ctx: &dyn EvalContext) -> String {
     }
 }
 
-pub fn get_refs(n: ASTNode) -> Vec<CellRange> {
+pub fn get_refs(n: &ASTNode) -> Vec<CellRange> {
     let mut refs = vec![];
 
     match n {
-        ASTNode::BinaryExpr { op, lhs, rhs } => {
-            refs.extend(get_refs(*lhs));
-            refs.extend(get_refs(*rhs));
+        ASTNode::BinaryExpr { op: _, lhs, rhs } => {
+            refs.extend(get_refs(lhs));
+            refs.extend(get_refs(rhs));
         }
-        ASTNode::Function { name, args } => {
+        ASTNode::Function { name: _, args } => {
             for arg in args {
-                refs.extend(get_refs(*arg))
+                refs.extend(get_refs(arg))
             }
         }
         ASTNode::Ref(cell_ref) => refs.push(cell_ref.to_cell_range()),
