@@ -72,7 +72,7 @@ mod tests {
                 val: "40".to_string(),
             },
         ];
-        let node = parse(tokens).unwrap();
+        let node = parse_internal(tokens).unwrap();
 
         assert_eq!(
             node,
@@ -120,7 +120,7 @@ mod tests {
                 val: ")".to_string(),
             },
         ];
-        let node = parse(tokens).unwrap();
+        let node = parse_internal(tokens).unwrap();
 
         assert_eq!(
             node,
@@ -144,7 +144,7 @@ mod tests {
             kind: TokenKind::ID,
             val: "B1".to_string(),
         }];
-        let node = parse(tokens).unwrap();
+        let node = parse_internal(tokens).unwrap();
         assert_eq!(node, ASTNode::Ref(CellRef { col: 1, row: 0 }));
     }
 }

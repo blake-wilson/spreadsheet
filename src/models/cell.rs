@@ -6,7 +6,7 @@ pub struct Cell {
     pub display_value: String,
 }
 
-#[derive(Debug, Eq, Hash, Clone, PartialEq)]
+#[derive(Debug, Eq, PartialOrd, Ord, Copy, Hash, Clone, PartialEq)]
 pub struct CellLocation {
     pub row: i32,
     pub col: i32,
@@ -23,7 +23,7 @@ impl CellLocation {
     }
 }
 
-#[derive(Debug, Eq, Hash, Clone, PartialEq)]
+#[derive(Debug, Eq, Copy, Hash, Clone, PartialEq)]
 pub struct CellRange {
     pub start_row: i32,
     pub start_col: i32,

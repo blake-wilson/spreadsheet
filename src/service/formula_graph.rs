@@ -3,13 +3,19 @@ use super::super::models::context::EvalContext;
 use super::super::parser;
 use rstar::RTree;
 use rstar::RTreeObject;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub struct FormulaGraph {
-    rt: RTree<models::CellRange>,
+    rt: RTree<RTreeNode>,
 
-    dependents_map: HashMap<models::CellRange, Vec<models::CellLocation>>,
-    dependencies_map: HashMap<models::CellLocation, Vec<models::CellRange>>,
+    dependents_map: HashMap<models::CellRange, HashSet<models::CellLocation>>,
+    dependencies_map: HashMap<models::CellLocation, HashSet<models::CellRange>>,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+struct RTreeNode {
+    cell: models::CellLocation,
+    points_to: models::CellRange,
 }
 
 #[derive(Debug, Eq, Hash, Clone, PartialEq)]
@@ -28,6 +34,16 @@ impl SearchNode {
             })
         }
         ret
+    }
+}
+
+impl rstar::RTreeObject for RTreeNode {
+    type Envelope = rstar::AABB<[i32; 2]>;
+    fn envelope(&self) -> Self::Envelope {
+        rstar::AABB::from_corners(
+            [self.points_to.start_row, self.points_to.start_col],
+            [self.points_to.stop_row, self.points_to.stop_col],
+        )
     }
 }
 
@@ -53,26 +69,41 @@ impl FormulaGraph {
     // insert_cell inserts the provided cell into the formula graph and returns the affected
     // cell ranges. These cell ranges should be recomputed in the order they are returned.
     // Cells later in the returned list may depend on cells evaluated earlier in the list.
-    fn insert_cell(
+    pub fn insert_cell(
         &mut self,
         cell: models::Cell,
         dependencies: Vec<models::CellRange>,
     ) -> Vec<models::CellLocation> {
-        let range = cell.to_range();
-        if !self.rt.contains(&range) {
-            // cell is not yet in the R-Tree
-            self.rt.insert(range.clone());
-        }
+        // let range = cell.to_range();
+        // if !self.rt.contains(&range) {
+        //     // cell is not yet in the R-Tree
+        //     self.rt.insert(range.clone());
+        // }
+        println!("insert cell {:?}", cell);
         for d in dependencies {
-            self.rt.insert(d.clone());
-            (*self.dependencies_map.entry(cell.loc()).or_insert(vec![])).push(d);
+            let to_insert = RTreeNode {
+                cell: cell.loc(),
+                points_to: d.clone(),
+            };
+            self.rt.insert(to_insert);
+            (*self
+                .dependencies_map
+                .entry(cell.loc())
+                .or_insert(HashSet::new()))
+            .insert(d);
         }
 
-        // Find all the dependents and update dependencies map for the inserted cell
-        let existing = self.rt.locate_in_envelope(&range.envelope());
+        // Find all the dependents and update dependents map for the inserted cell
+        let existing = self.rt.locate_in_envelope(&cell.to_range().envelope());
+        // self.rt.locate_all_at_point(&cell.to_range().envelope());
 
         for e in existing {
-            (*self.dependents_map.entry(e.clone()).or_insert(vec![])).push(cell.loc());
+            println!("add {:?} to dependents map", e);
+            (*self
+                .dependents_map
+                .entry(cell.to_range().clone())
+                .or_insert(HashSet::new()))
+            .insert(e.cell);
         }
 
         self.cells_to_eval(&cell)
@@ -81,27 +112,40 @@ impl FormulaGraph {
     // cells_to_eval returns the list of cells which must be evaluated in order to evaluate
     // the provided cell's formula.
     fn cells_to_eval(&self, cell: &models::Cell) -> Vec<models::CellLocation> {
-        let search_nodes = self.dfs(&cell.loc(), &vec![]);
+        let mut stack = vec![];
+        self.dfs(&cell.loc(), &mut stack, &mut HashSet::new());
+        println!("formula stack: {:?}", stack);
         let mut ret = vec![];
-        for s in search_nodes {
+        for s in stack {
             ret.push(models::CellLocation {
-                row: s.loc.row,
-                col: s.loc.col,
+                row: s.row,
+                col: s.col,
             });
         }
         ret
     }
 
-    fn dfs(&self, cell: &models::CellLocation, formula_stack: &Vec<SearchNode>) -> Vec<SearchNode> {
-        let formula_stack = self.dependents_map[&cell.to_range().clone()].clone();
-        let mut search_lst = SearchNode::new_list(formula_stack);
-        for i in 0..search_lst.len() {
-            let s = search_lst[i].clone();
-            if !s.visited {
-                self.dfs(&s.loc, &search_lst);
+    fn dfs(
+        &self,
+        cell: &models::CellLocation,
+        stack: &mut Vec<models::CellLocation>,
+        visited_set: &mut HashSet<models::CellLocation>,
+    ) {
+        println!("get dependents for {:?}", cell);
+        let dependents = self.dependents_map.get_key_value(&cell.to_range().clone());
+        println!("dependents: {:?}", dependents);
+        match dependents {
+            Some((_, deps)) => {
+                println!("formula stack {:?}", stack);
+                for d in deps {
+                    if !visited_set.contains(d) {
+                        self.dfs(&d, stack, visited_set);
+                    }
+                    visited_set.insert(d.clone());
+                    stack.push(d.clone());
+                }
             }
-            search_lst.push(s.clone());
+            None => {}
         }
-        search_lst
     }
 }

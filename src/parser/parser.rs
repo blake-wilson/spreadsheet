@@ -158,7 +158,7 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
     }
 }
 
-fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
+pub fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
     if tokens.len() == 0 {
         return Ok(ASTNode::Empty);
     }
