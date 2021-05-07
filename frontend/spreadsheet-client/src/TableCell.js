@@ -17,8 +17,8 @@ class TableCell extends React.Component {
 
   constructor(props) {
       super(props);
-      this.state = {value: "", displayValue: ""};
 
+      this.onKeyDown = props.onKeyDown
       this.handleKeyDown = this.handleKeyDown.bind(this);
       this.handleFocus = this.handleFocus.bind(this);
       this.handleFocusOut = this.handleFocusOut.bind(this);
@@ -27,17 +27,17 @@ class TableCell extends React.Component {
   render() {
       return (
           <td onFocus={this.handleFocus} onBlur={this.handleFocusOut} onKeyDown={this.handleKeyDown} contentEditable='true' height="20px" width="72px">
-            { this.state.value }
+            { this.props.displayValue }
           </td>
       )
   }
 
   handleFocus(e) {
-      e.target.innerText = this.state.value;
+      e.target.innerText = this.props.value;
   }
 
   handleFocusOut(e) {
-      e.target.innerText = this.state.displayValue;
+      e.target.innerText = this.props.displayValue;
   }
 
   handleKeyDown(e) {
@@ -51,22 +51,7 @@ class TableCell extends React.Component {
     c1.setRow(this.props.row);
     c1.setCol(this.props.col);
     c1.setValue(target.textContent);
-    var request = new InsertCellsRequest();
-    request.setCellsList([c1]);
-    apiClient.insertCells(request, {}, (err, response) => {
-    if (err) {
-        console.log(`Unexpected error for insertCells: code = ${err.code}` +
-                    `, message = "${err.message}"`);
-      } else {
-          console.log("inserted " + response.getCellsList() + " cells");
-          for (const c of response.getCellsList()) {
-              console.log(c.getValue());
-              target.innerText = c.getDisplayValue()
-              this.state.value = c.getValue();
-              this.state.displayValue = c.getDisplayValue();
-          }
-      }
-    });
+    this.onKeyDown(this.props.row, this.props.col, target.textContent, target);
   }
 }
 

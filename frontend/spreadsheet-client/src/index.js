@@ -6,7 +6,7 @@ import reportWebVitals from './reportWebVitals';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App numRows="50" numCols="10" />
+    <App numRows={20} numCols={10} />
   </React.StrictMode>,
   document.getElementById('root')
 );
