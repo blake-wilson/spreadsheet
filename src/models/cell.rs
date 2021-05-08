@@ -21,6 +21,11 @@ impl CellLocation {
             stop_col: self.col + 1,
         }
     }
+
+    // returns the magnitude of the cell location as if it were a vector
+    pub fn magnitude(&self) -> i32 {
+        return self.row * self.row + self.col * self.col;
+    }
 }
 
 #[derive(Debug, Eq, Copy, Hash, Clone, PartialEq)]
