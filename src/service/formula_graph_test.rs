@@ -30,7 +30,7 @@ mod tests {
         to_eval = fg.insert_cell(b1.clone(), vec![]);
         assert_eq!(vec![a1.loc()], to_eval);
 
-        // Add a third diependency, A1 --> B1 --> C1
+        // Add a third dependency, A1 --> B1 --> C1
         let c1 = Cell {
             row: 0,
             col: 2,

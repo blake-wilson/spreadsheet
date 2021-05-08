@@ -68,7 +68,7 @@ class App extends React.Component {
     for (let i = 0; i < this.props.numRows; i++) {
         items.push(
             <tr>
-            <td>{ i.toString() }</td>
+            <td>{ (i + 1).toString()}</td>
             { this.state.table.slice(
             i * this.props.numCols,
             i * this.props.numCols + this.props.numCols)
