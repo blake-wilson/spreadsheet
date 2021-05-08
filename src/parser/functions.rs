@@ -10,25 +10,29 @@ pub fn evaluate_function(name: &str, args: Vec<EvalResult>) -> EvalResult {
 }
 
 pub fn sum(args: Vec<EvalResult>) -> EvalResult {
-    let total = args.iter().fold(0f64, |acc, x| match x {
-        &EvalResult::Numeric(n) => acc + n,
-        _ => acc,
-    });
+    let numbers = numeric_values(args);
+    let total = numbers.iter().fold(0f64, |acc, x| acc + x);
 
     EvalResult::Numeric(total)
 }
 
 pub fn avg(args: Vec<EvalResult>) -> EvalResult {
-    let mut num_numeric = 0;
-    let total = args.iter().fold(0f64, |acc, x| match x {
-        &EvalResult::Numeric(n) => {
-            num_numeric += 1;
-            acc + n
-        }
-        _ => acc,
-    });
+    let numbers = numeric_values(args);
+    let total = numbers.iter().fold(0f64, |acc, x| acc + x);
 
-    EvalResult::Numeric(total / num_numeric as f64)
+    EvalResult::Numeric(total / numbers.len() as f64)
+}
+
+fn numeric_values(args: Vec<EvalResult>) -> Vec<f64> {
+    args.into_iter()
+        .filter_map(|x| {
+            let num = match x {
+                EvalResult::Numeric(n) => Some(n),
+                _ => None,
+            };
+            num
+        })
+        .collect()
 }
 
 // pub fn median(args: Vec<EvalResult>) -> EvalResult {
