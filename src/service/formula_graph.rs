@@ -28,6 +28,14 @@ impl rstar::RTreeObject for RTreeNode {
     }
 }
 
+impl rstar::PointDistance for RTreeNode {
+    fn distance_2(&self, point: &[i32; 2]) -> i32 {
+        let dist = ((self.points_to.start_row + self.points_to.stop_row) / 2 - point[0])
+            + ((self.points_to.start_col + self.points_to.stop_col) / 2 - point[1]);
+        dist * dist
+    }
+}
+
 impl rstar::RTreeObject for models::CellRange {
     type Envelope = rstar::AABB<[i32; 2]>;
     fn envelope(&self) -> Self::Envelope {
@@ -56,6 +64,10 @@ impl FormulaGraph {
         dependencies: Vec<models::CellRange>,
     ) -> Vec<models::CellLocation> {
         println!("insert cell {:?}", cell);
+
+        // For each dependency:
+        // 1) Mark the dependency and insert an RTree node containing the dependencies boundaries.
+        // 2) Mark the inserted cell as a dependent of the dependency
         for d in dependencies {
             let to_insert = RTreeNode {
                 cell: cell.loc(),
@@ -67,13 +79,25 @@ impl FormulaGraph {
                 .entry(cell.loc())
                 .or_insert(HashSet::new()))
             .insert(d);
+
+            (*self.dependents_map.entry(d).or_insert(HashSet::new())).insert(cell.loc());
         }
+        let self_ref = RTreeNode {
+            cell: cell.loc(),
+            points_to: cell.to_range(),
+        };
+        self.rt.insert(self_ref);
 
         // Find all the dependents and update dependents map for the inserted cell
-        let existing = self.rt.locate_in_envelope(&cell.to_range().envelope());
+        let cr = cell.to_range();
+        let existing = self.rt.locate_all_at_point(&[cr.start_row, cr.start_col]);
 
         for e in existing {
-            println!("add {:?} to dependents map", e);
+            println!("found {:?} as a dependency", e);
+            if e.cell == cell.loc() {
+                continue;
+            }
+            println!("add to dependents map: {:?}", e.cell);
             (*self
                 .dependents_map
                 .entry(cell.to_range().clone())
