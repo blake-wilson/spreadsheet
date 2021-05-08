@@ -59,8 +59,16 @@ class App extends React.Component {
 
   render() {
     let items = [];
+    let header_items = [<td> </td>];
+    for (let i = 0; i < this.props.numCols; i++) {
+        header_items.push(<td>{ String.fromCharCode('A'.charCodeAt() + i) }</td>);
+        console.log("added header item");
+    }
+
     for (let i = 0; i < this.props.numRows; i++) {
-        items.push(<tr>
+        items.push(
+            <tr>
+            <td>{ i.toString() }</td>
             { this.state.table.slice(
             i * this.props.numCols,
             i * this.props.numCols + this.props.numCols)
@@ -71,6 +79,9 @@ class App extends React.Component {
       <div className="App">
         <header className="App-header">
           <table border="1px solid white"> 
+            <tr>
+                { header_items }
+            </tr>
             {items}
           </table>
         </header>

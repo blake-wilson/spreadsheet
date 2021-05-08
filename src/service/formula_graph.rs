@@ -93,11 +93,9 @@ impl FormulaGraph {
         let existing = self.rt.locate_all_at_point(&[cr.start_row, cr.start_col]);
 
         for e in existing {
-            println!("found {:?} as a dependency", e);
             if e.cell == cell.loc() {
                 continue;
             }
-            println!("add to dependents map: {:?}", e.cell);
             (*self
                 .dependents_map
                 .entry(cell.to_range().clone())

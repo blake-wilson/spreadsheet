@@ -44,9 +44,7 @@ impl CellsService for MemoryCellsService {
             // Update the formula graph and recompute necessary cells
             let formula = parser::parse(&cc.value)?;
             let refs = parser::get_refs(&formula);
-            println!("refs: {:?}", refs);
             let mut to_eval = self.formula_graph.insert_cell(cc.clone(), refs);
-            println!("to re-evaluate: {:?}", to_eval);
 
             while let Some(c) = to_eval.pop() {
                 // We don't need to check refs again here since the formula graph already computed
