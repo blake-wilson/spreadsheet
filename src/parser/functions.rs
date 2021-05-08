@@ -4,7 +4,7 @@ pub fn evaluate_function(name: &str, args: Vec<EvalResult>) -> EvalResult {
     match name.to_uppercase().as_str() {
         "SUM" => sum(args),
         "AVG" => avg(args),
-        // "MEDIAN" => median(args),
+        "MEDIAN" => median(args),
         _ => EvalResult::NonNumeric("".to_owned()),
     }
 }
@@ -23,6 +23,16 @@ pub fn avg(args: Vec<EvalResult>) -> EvalResult {
     EvalResult::Numeric(total / numbers.len() as f64)
 }
 
+pub fn median(args: Vec<EvalResult>) -> EvalResult {
+    let mut numbers = numeric_values(args);
+    numbers.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+    if numbers.len() == 0 {
+        return EvalResult::NonNumeric("".to_string());
+    }
+    EvalResult::Numeric(numbers[numbers.len() / 2])
+}
+
 fn numeric_values(args: Vec<EvalResult>) -> Vec<f64> {
     args.into_iter()
         .filter_map(|x| {
@@ -34,15 +44,3 @@ fn numeric_values(args: Vec<EvalResult>) -> Vec<f64> {
         })
         .collect()
 }
-
-// pub fn median(args: Vec<EvalResult>) -> EvalResult {
-//     let mut num_numeric = 0;
-//     let total = args.iter().fold(0f64, |acc, x| match x {
-//         &EvalResult::Numeric(n) => {
-//             num_numeric += 1;
-//             acc + n
-//         }
-//     });
-//
-//     EvalResult::Numeric(total / num_numeric as f64)
-// }
