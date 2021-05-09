@@ -58,6 +58,7 @@ pub enum ASTNode {
     },
 }
 
+#[derive(Debug, PartialEq)]
 pub enum EvalResult {
     Numeric(f64),
     NonNumeric(String),
@@ -225,10 +226,9 @@ pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<
         Some(t) => match t.kind {
             TokenKind::Colon => {
                 tokens.remove(0);
-                let mut stop = parse_cell_ref(tokens.get(0).unwrap())?;
+                let stop = parse_cell_ref(tokens.get(0).unwrap())?;
                 tokens.remove(0);
                 start.row = 0;
-                stop.row = -1;
                 ASTNode::Range { start, stop }
             }
             _ => ASTNode::Ref(start),
@@ -303,7 +303,6 @@ pub fn get_operator(val: &str) -> Result<Operator, String> {
 fn parse_cell_ref(curr: &Token) -> Result<CellRef, String> {
     let mut col_specified = false;
     let mut row_specified = false;
-    let mut colon_specified = false;
 
     let mut col_str = "".to_string();
     let mut row_str = "".to_string();

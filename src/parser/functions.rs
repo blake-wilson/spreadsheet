@@ -5,6 +5,7 @@ pub fn evaluate_function(name: &str, args: Vec<EvalResult>) -> EvalResult {
         "SUM" => sum(args),
         "AVG" => avg(args),
         "MEDIAN" => median(args),
+        "COUNT" => count(args),
         _ => EvalResult::NonNumeric("".to_owned()),
     }
 }
@@ -31,6 +32,11 @@ pub fn median(args: Vec<EvalResult>) -> EvalResult {
         return EvalResult::NonNumeric("".to_string());
     }
     EvalResult::Numeric(numbers[numbers.len() / 2])
+}
+
+pub fn count(args: Vec<EvalResult>) -> EvalResult {
+    println!("args: {:?}", args);
+    EvalResult::Numeric(args.iter().fold(0f64, |acc, _| acc + 1f64))
 }
 
 fn numeric_values(args: Vec<EvalResult>) -> Vec<f64> {

@@ -99,8 +99,8 @@ impl MemoryCellsService {
             num_rows,
             data: vec![
                 models::Cell {
-                    row: -1,
-                    col: -1,
+                    row: 0,
+                    col: 0,
                     value: "".to_string(),
                     display_value: "".to_string(),
                 };
