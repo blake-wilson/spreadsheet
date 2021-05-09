@@ -21,8 +21,12 @@ pub struct MemoryCellsService {
 }
 
 impl EvalContext for MemoryCellsService {
-    fn get_cell(&self, row: i32, col: i32) -> models::Cell {
-        self.get_cell(row, col)
+    fn get_cell(&self, row: i32, col: i32) -> Option<models::Cell> {
+        let c = self.get_cell(row, col);
+        match c.value.as_ref() {
+            "" => None,
+            _ => Some(c),
+        }
     }
 
     fn get_cells(&self, rect: models::Rect) -> Vec<models::Cell> {

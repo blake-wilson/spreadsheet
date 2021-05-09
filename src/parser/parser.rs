@@ -153,9 +153,13 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
             if !cell_ref.is_valid(ctx.num_rows(), ctx.num_cols()) {
                 return EvalResult::Error("#REF".to_owned());
             }
-            let cell_value = ctx.get_cell(cell_ref.row, cell_ref.col).value;
-            let parsed_val = parse(&cell_value).unwrap();
-            evaluate_internal(parsed_val, ctx)
+            match ctx.get_cell(cell_ref.row, cell_ref.col) {
+                Some(cell) => {
+                    let parsed_val = parse(&cell.value).unwrap();
+                    evaluate_internal(parsed_val, ctx)
+                }
+                None => EvalResult::NonNumeric("".to_owned()),
+            }
         }
         ASTNode::Range { start, mut stop } => {
             println!("evaluate range: {:?}, {:?}", start, stop);
@@ -165,8 +169,14 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
             }
             for i in start.row..stop.row + 1 {
                 for j in start.col..stop.col + 1 {
-                    let res = evaluate_internal(ASTNode::Ref(CellRef { row: i, col: j }), ctx);
-                    results.push(Box::new(res));
+                    match ctx.get_cell(i, j) {
+                        Some(cell) => {
+                            let res =
+                                evaluate_internal(ASTNode::Ref(CellRef { row: i, col: j }), ctx);
+                            results.push(Box::new(res));
+                        }
+                        None => {}
+                    }
                 }
             }
             EvalResult::List(results)
