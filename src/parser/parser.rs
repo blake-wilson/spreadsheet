@@ -18,6 +18,15 @@ pub struct CellRef {
 }
 
 impl CellRef {
+    fn is_unbounded(&self) -> bool {
+        // '-1' is a magic number referring to an unbounded reference
+        self.row == -1
+    }
+
+    fn is_valid(&self, max_row: i32, max_col: i32) -> bool {
+        self.row < max_row && self.col < max_col
+    }
+
     fn to_cell_range(&self) -> CellRange {
         CellRange {
             start_row: self.row,
@@ -53,6 +62,7 @@ pub enum EvalResult {
     Numeric(f64),
     NonNumeric(String),
     List(Vec<Box<EvalResult>>),
+    Error(String),
 }
 
 pub fn parse(input: &str) -> Result<ASTNode, String> {
@@ -74,6 +84,7 @@ pub fn evaluate(n: ASTNode, ctx: &dyn EvalContext) -> String {
         EvalResult::Numeric(n) => n.to_string(),
         EvalResult::NonNumeric(s) => s,
         EvalResult::List(_) => "".to_owned(),
+        EvalResult::Error(msg) => msg.to_owned(),
     }
 }
 
@@ -116,6 +127,8 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
                     Operator::Multiply => EvalResult::Numeric(n1 * n2),
                     Operator::Divide => EvalResult::Numeric(n1 / n2),
                 },
+                (EvalResult::Error(l), _) => EvalResult::Error(l),
+                (_, EvalResult::Error(r)) => EvalResult::Error(r),
                 _ => EvalResult::Numeric(0f64),
             }
         }
@@ -136,13 +149,19 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
             evaluate_function(&name, evaluated_args)
         }
         ASTNode::Ref(cell_ref) => {
+            if !cell_ref.is_valid(ctx.num_rows(), ctx.num_cols()) {
+                return EvalResult::Error("#REF".to_owned());
+            }
             let cell_value = ctx.get_cell(cell_ref.row, cell_ref.col).value;
             let parsed_val = parse(&cell_value).unwrap();
             evaluate_internal(parsed_val, ctx)
         }
-        ASTNode::Range { start, stop } => {
+        ASTNode::Range { start, mut stop } => {
             println!("evaluate range: {:?}, {:?}", start, stop);
             let mut results = vec![];
+            if stop.is_unbounded() {
+                stop.row = ctx.num_rows() - 1;
+            }
             for i in start.row..stop.row + 1 {
                 for j in start.col..stop.col + 1 {
                     let res = evaluate_internal(ASTNode::Ref(CellRef { row: i, col: j }), ctx);
@@ -197,15 +216,19 @@ pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, St
 }
 
 pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
-    let start = parse_cell_ref(curr)?;
+    let mut start = parse_cell_ref(curr)?;
     let next = tokens.get(0);
+
+    println!("cell ref or range next token {:?}", next);
 
     let cell_ref = match next {
         Some(t) => match t.kind {
             TokenKind::Colon => {
                 tokens.remove(0);
-                let stop = parse_cell_ref(tokens.get(0).unwrap())?;
+                let mut stop = parse_cell_ref(tokens.get(0).unwrap())?;
                 tokens.remove(0);
+                start.row = 0;
+                stop.row = -1;
                 ASTNode::Range { start, stop }
             }
             _ => ASTNode::Ref(start),
@@ -280,6 +303,7 @@ pub fn get_operator(val: &str) -> Result<Operator, String> {
 fn parse_cell_ref(curr: &Token) -> Result<CellRef, String> {
     let mut col_specified = false;
     let mut row_specified = false;
+    let mut colon_specified = false;
 
     let mut col_str = "".to_string();
     let mut row_str = "".to_string();
@@ -307,10 +331,13 @@ fn parse_cell_ref(curr: &Token) -> Result<CellRef, String> {
         val.push(c);
     }
 
-    let row = match row_str.parse::<i32>() {
-        Ok(n) => Ok(n),
-        Err(_) => Err(format!("cannot parse row number from {}", row_str)),
-    }?;
+    let mut row = 0;
+    if row_specified {
+        row = match row_str.parse::<i32>() {
+            Ok(n) => Ok(n),
+            Err(_) => Err(format!("cannot parse row number from {}", row_str)),
+        }?;
+    }
     if row < 0 {
         return Err(format!(
             "row number must be a non-negative integer but got {}",
@@ -329,6 +356,7 @@ fn col_letters_to_num(letters: &str) -> i32 {
     let upper = letters.to_uppercase();
     let mut total: i32 = 0;
     let mut mult = 1;
+
     for c in upper.chars() {
         total += ((c as i32) - 65) * mult;
         mult += 1;

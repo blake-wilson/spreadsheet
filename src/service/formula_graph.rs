@@ -1,4 +1,5 @@
 use super::super::models;
+use super::super::models::context::EvalContext;
 use rstar::{Envelope, Point, PointDistance, RTree, RTreeObject, AABB};
 use std::collections::{HashMap, HashSet};
 

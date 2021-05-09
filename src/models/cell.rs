@@ -36,6 +36,15 @@ pub struct CellRange {
     pub stop_col: i32,
 }
 
+impl CellRange {
+    pub fn clamp(&mut self, max_rows: i32) {
+        if self.stop_row != -1 {
+            return;
+        }
+        self.stop_row = max_rows
+    }
+}
+
 impl Cell {
     pub fn is_formula(&self) -> bool {
         self.value.len() > 0 && self.value.as_bytes()[0] as char == '='

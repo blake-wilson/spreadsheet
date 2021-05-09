@@ -12,6 +12,7 @@ pub trait CellsService {
 }
 
 pub struct MemoryCellsService {
+    num_rows: i32,
     num_cols: i32,
     // data stored in row-major order
     data: Vec<models::Cell>,
@@ -26,6 +27,14 @@ impl EvalContext for MemoryCellsService {
 
     fn get_cells(&self, rect: models::Rect) -> Vec<models::Cell> {
         <_ as CellsService>::get_cells(self, rect)
+    }
+
+    fn num_rows(&self) -> i32 {
+        self.num_rows
+    }
+
+    fn num_cols(&self) -> i32 {
+        self.num_cols
     }
 }
 
@@ -43,7 +52,8 @@ impl CellsService for MemoryCellsService {
 
             // Update the formula graph and recompute necessary cells
             let formula = parser::parse(&cc.value)?;
-            let refs = parser::get_refs(&formula);
+            let mut refs = parser::get_refs(&formula);
+            refs.iter_mut().for_each(|r| (*r).clamp(self.num_rows));
             println!("refs: {:?}", refs);
             let mut to_eval = self.formula_graph.insert_cell(cc.clone(), refs);
 
@@ -86,6 +96,7 @@ impl MemoryCellsService {
     pub fn new(num_rows: i32, num_cols: i32) -> Self {
         MemoryCellsService {
             num_cols,
+            num_rows,
             data: vec![
                 models::Cell {
                     row: -1,
