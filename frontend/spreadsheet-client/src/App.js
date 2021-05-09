@@ -1,9 +1,10 @@
 import logo from './logo.svg';
 import './App.css';
 import TableCell from './TableCell';
+import {Rect} from './api_pb.js';
 import {SpreadsheetAPIClient} from './api_grpc_web_pb.js';
 
-import {InsertCell, InsertCellsRequest, InsertCellsResponse} from './api_pb.js';
+import {GetCellsRequest, InsertCell, InsertCellsRequest, InsertCellsResponse} from './api_pb.js';
 import React, {Component} from 'react';
 
 let apiClient = new SpreadsheetAPIClient('http://' + window.location.hostname + ':8080',
@@ -23,8 +24,41 @@ class App extends React.Component {
               items.push(cell);
           }
       }
-
       this.state = {table: items, numRows: this.props.numRows, numCols: this.props.numCols};
+
+      // get the initial cells values
+      var request = new GetCellsRequest();
+      var rect = new Rect();
+      rect.setStartRow(0);
+      rect.setStopRow(100);
+      rect.setStartCol(0);
+      rect.setStopCol(20);
+      console.log("rect: ",rect);
+
+      request.setRect(rect);
+      apiClient.getCells(request, {}, (err, response) => {
+      if (err) {
+          console.log(`Unexpected error for insertCells: code = ${err.code}` +
+                      `, message = "${err.message}"`);
+        } else {
+            this.insertIntoTable(response.getCellsList());
+        }
+      });
+  }
+
+  insertIntoTable(cells) {
+    for (const c of cells) {
+      var row = c.getRow();
+      var col = c.getCol();
+      let table = [...this.state.table];
+      let idx = row * this.props.numCols + col
+      let tableCell = {...table[idx], value: c.getValue(), displayValue: c.getDisplayValue()};
+      tableCell.props = {...tableCell.props, value: c.getValue(), displayValue: c.getDisplayValue()};
+      console.log(tableCell);
+      table[idx] = tableCell;
+      console.log(idx);
+      this.setState({table: table});
+    }
   }
 
   handleKeyDown(row, col, textContent, cellElement) {
@@ -40,18 +74,7 @@ class App extends React.Component {
                     `, message = "${err.message}"`);
       } else {
           console.log("inserted " + response.getCellsList() + " cells");
-          for (const c of response.getCellsList()) {
-              var row = c.getRow();
-              var col = c.getCol();
-              let table = [...this.state.table];
-              let idx = row * this.props.numCols + col
-              let tableCell = {...table[idx], value: c.getValue(), displayValue: c.getDisplayValue()};
-              tableCell.props = {...tableCell.props, value: c.getValue(), displayValue: c.getDisplayValue()};
-              console.log(tableCell);
-              table[idx] = tableCell;
-              console.log(idx);
-              this.setState({table: table});
-          }
+          this.insertIntoTable(response.getCellsList());
       }
     });
   }

@@ -170,7 +170,7 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
             for i in start.row..stop.row + 1 {
                 for j in start.col..stop.col + 1 {
                     match ctx.get_cell(i, j) {
-                        Some(cell) => {
+                        Some(_) => {
                             let res =
                                 evaluate_internal(ASTNode::Ref(CellRef { row: i, col: j }), ctx);
                             results.push(Box::new(res));

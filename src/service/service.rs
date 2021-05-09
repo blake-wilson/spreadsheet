@@ -84,12 +84,13 @@ impl CellsService for MemoryCellsService {
 
     fn get_cells(&self, r: models::Rect) -> Vec<models::Cell> {
         let mut result_cells: Vec<models::Cell> = Vec::new();
-        for row in r.start_row..r.stop_row {
-            let start_idx = row * self.num_cols;
-            let stop_idx = start_idx + models::rect::width(&r);
-            for idx in start_idx..stop_idx {
-                let c = self.data.get(idx as usize).unwrap().clone();
-                result_cells.push(c);
+        let clamped = r.clamp(self.num_rows, self.num_cols);
+        for row in clamped.start_row..clamped.stop_row {
+            for col in clamped.start_col..clamped.stop_col {
+                let c = (self as &dyn EvalContext).get_cell(row, col);
+                if !c.is_none() {
+                    result_cells.push(c.unwrap().clone());
+                }
             }
         }
         result_cells
