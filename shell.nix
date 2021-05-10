@@ -13,19 +13,15 @@ pkgs.mkShell {
     buildInputs = [
         pkgs.cargo
         buildPackages.protobuf
-            rustc
             nodePackages.webpack
             nodePackages.webpack-cli
             nodePackages.create-react-app
-            rustfmt
             openssl
             nodejs
             pkg-config
             cmake
-            rustNightlyChannel
             rustup
             zlib
     ];
-    RUST_SRC_PATH = "${rustNightlyChannel}/lib/rustlib/src/rust/library";
     hardeningDisable = ["fortify" ];
 }
