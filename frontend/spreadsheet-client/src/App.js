@@ -8,7 +8,7 @@ import {GetCellsRequest, InsertCell, InsertCellsRequest, InsertCellsResponse} fr
 import React, {Component} from 'react';
 
 let hostname = "spreadsheet.yellowpapersun.net"
-let apiClient = new SpreadsheetAPIClient('http://' + hostname + ':8080',
+let apiClient = new SpreadsheetAPIClient('https://' + hostname + ':8080',
                                null, null);
 
 class App extends React.Component {
