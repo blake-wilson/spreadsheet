@@ -19,6 +19,7 @@ pkgs.mkShell {
             openssl
             nodejs
             pkg-config
+            docker-compose
             cmake
             rustup
             zlib
