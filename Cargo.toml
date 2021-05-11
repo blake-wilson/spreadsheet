@@ -29,3 +29,8 @@ path = "src/client.rs"
 [[bin]]
 name = "spreadsheet_server"
 path = "src/server.rs"
+
+# target to build Docker image with
+[[bin]]
+name = "rust-docker"
+path = "src/main.rs"
