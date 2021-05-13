@@ -6,11 +6,9 @@ services:
         ports:
             - "9090:9090"
     envoy:
-        image: "envoy-local"
+        image: "envoyproxy/envoy:v1.17.1"
+        volumes:
+            - ./envoy.yaml:/etc/envoy/envoy.yaml
         ports:
             - "8080:8080"
             - "9901:9901"
-        command:
-            - "--config-path /etc/envoy/envoy.yaml"
-            - "--mode serve"
-            - "--concurrency 1"
