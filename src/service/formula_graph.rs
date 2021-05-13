@@ -18,7 +18,7 @@ struct RTreeNode {
 
 pub struct InsertResult {
     pub inserted_cells: Vec<models::CellLocation>,
-    pub circular_cells: Vec<models::CellLocation>,
+    pub circular: bool,
 }
 
 impl RTreeObject for RTreeNode {
@@ -184,13 +184,14 @@ impl FormulaGraph {
     // the provided cell's formula.
     fn cells_to_eval(&self, cell: &models::Cell) -> InsertResult {
         let mut stack = vec![];
-        let mut circulars = HashSet::new();
+        let mut visited_set = HashSet::new();
+        let mut circular = false;
         self.dfs(
             &cell.loc(),
             &mut stack,
-            &mut HashSet::new(),
-            &mut circulars,
+            &mut visited_set,
             &mut vec![cell.loc()],
+            &mut circular,
         );
         let mut ret = vec![];
         for s in stack.iter() {
@@ -200,9 +201,13 @@ impl FormulaGraph {
             });
         }
 
+        println!("insert complete. Circular? {:?}", circular);
+        if circular {
+            stack = visited_set.into_iter().collect();
+        }
         InsertResult {
             inserted_cells: stack.clone(),
-            circular_cells: circulars.into_iter().collect(),
+            circular,
         }
     }
 
@@ -211,8 +216,8 @@ impl FormulaGraph {
         cell: &models::CellLocation,
         stack: &mut Vec<models::CellLocation>,
         visited_set: &mut HashSet<models::CellLocation>,
-        circulars_set: &mut HashSet<models::CellLocation>,
         path: &mut Vec<models::CellLocation>,
+        circular: &mut bool,
     ) {
         println!("get dependents for {:?}", cell);
         let dependents = self.dependents_map.get_key_value(&cell.to_range().clone());
@@ -222,20 +227,17 @@ impl FormulaGraph {
             Some((_, deps)) => {
                 println!("formula stack {:?}", stack);
                 for d in deps {
-                    path.push(d.clone());
                     if (&path).contains(d) {
                         println!("path: {:?}", path);
                         for c in path.iter() {
                             println!("adding {:?} to circulars", c);
-                            circulars_set.insert(c.clone());
+                            visited_set.insert(c.clone());
                         }
+                        *circular = true
                     }
-                    if circulars_set.contains(d) {
-                        println!("circular detected\n\n");
-                        return;
-                    }
+                    path.push(d.clone());
                     if !visited_set.contains(d) {
-                        self.dfs(&d, stack, visited_set, circulars_set, path);
+                        self.dfs(&d, stack, visited_set, path, circular);
                     }
                     path.pop();
                     visited_set.insert(d.clone());
