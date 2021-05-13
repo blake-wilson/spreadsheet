@@ -16,6 +16,11 @@ struct RTreeNode {
     points_to: models::CellRange,
 }
 
+pub struct InsertResult {
+    pub inserted_cells: Vec<models::CellLocation>,
+    pub circular_cells: Vec<models::CellLocation>,
+}
+
 impl RTreeObject for RTreeNode {
     type Envelope = rstar::AABB<models::CellLocation>;
     fn envelope(&self) -> Self::Envelope {
@@ -135,7 +140,7 @@ impl FormulaGraph {
         &mut self,
         cell: models::Cell,
         dependencies: Vec<models::CellRange>,
-    ) -> Vec<models::CellLocation> {
+    ) -> InsertResult {
         println!("insert cell {:?}", cell);
 
         // For each dependency:
@@ -177,18 +182,28 @@ impl FormulaGraph {
 
     // cells_to_eval returns the list of cells which must be evaluated in order to evaluate
     // the provided cell's formula.
-    fn cells_to_eval(&self, cell: &models::Cell) -> Vec<models::CellLocation> {
+    fn cells_to_eval(&self, cell: &models::Cell) -> InsertResult {
         let mut stack = vec![];
-        self.dfs(&cell.loc(), &mut stack, &mut HashSet::new());
-        println!("formula stack: {:?}", stack);
+        let mut circulars = HashSet::new();
+        self.dfs(
+            &cell.loc(),
+            &mut stack,
+            &mut HashSet::new(),
+            &mut circulars,
+            &mut vec![cell.loc()],
+        );
         let mut ret = vec![];
-        for s in stack {
+        for s in stack.iter() {
             ret.push(models::CellLocation {
                 row: s.row,
                 col: s.col,
             });
         }
-        ret
+
+        InsertResult {
+            inserted_cells: stack.clone(),
+            circular_cells: circulars.into_iter().collect(),
+        }
     }
 
     fn dfs(
@@ -196,17 +211,33 @@ impl FormulaGraph {
         cell: &models::CellLocation,
         stack: &mut Vec<models::CellLocation>,
         visited_set: &mut HashSet<models::CellLocation>,
+        circulars_set: &mut HashSet<models::CellLocation>,
+        path: &mut Vec<models::CellLocation>,
     ) {
         println!("get dependents for {:?}", cell);
         let dependents = self.dependents_map.get_key_value(&cell.to_range().clone());
         println!("dependents: {:?}", dependents);
+
         match dependents {
             Some((_, deps)) => {
                 println!("formula stack {:?}", stack);
                 for d in deps {
-                    if !visited_set.contains(d) {
-                        self.dfs(&d, stack, visited_set);
+                    path.push(d.clone());
+                    if (&path).contains(d) {
+                        println!("path: {:?}", path);
+                        for c in path.iter() {
+                            println!("adding {:?} to circulars", c);
+                            circulars_set.insert(c.clone());
+                        }
                     }
+                    if circulars_set.contains(d) {
+                        println!("circular detected\n\n");
+                        return;
+                    }
+                    if !visited_set.contains(d) {
+                        self.dfs(&d, stack, visited_set, circulars_set, path);
+                    }
+                    path.pop();
                     visited_set.insert(d.clone());
                     stack.push(d.clone());
                 }
