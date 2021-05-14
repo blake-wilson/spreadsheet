@@ -36,7 +36,7 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
                 c.get_col()
             );
         }
-        let insert_res: Result<Vec<models::Cell>, String>;
+        let insert_res: Result<Vec<models::Cell>, parser::Error>;
         {
             let cells = insert_cells_to_models(req.get_cells());
             let mut cs = self.cells_service.lock().unwrap();

@@ -19,7 +19,7 @@ pub struct Token {
     pub val: String,
 }
 
-pub fn lex(input: &str) -> Vec<Token> {
+pub fn lex(input: &str) -> Result<Vec<Token>, &'static str> {
     let mut result = Vec::new();
     let mut it = input.chars().peekable();
 
@@ -88,17 +88,15 @@ pub fn lex(input: &str) -> Vec<Token> {
                 let id = lex_id(&mut it);
                 Ok(id)
             }
-            x => panic!("unrecognized input {:?}", x),
+            _ => Err("unrecognized input"),
         };
         match t {
             Ok(t) => result.push(t),
-            Err(e) => {
-                panic!("error parsing expression: {}", e)
-            }
+            Err(e) => return Err(e),
         }
     }
     println!("lexed tokens: {:?}", result);
-    result
+    Ok(result)
 }
 
 fn lex_number<I>(input: &mut Peekable<I>) -> Result<Token, &'static str>

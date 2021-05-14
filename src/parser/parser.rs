@@ -1,3 +1,4 @@
+use super::super::models::CellLocation;
 use super::super::models::CellRange;
 use super::super::models::EvalContext;
 use super::functions::*;
@@ -17,6 +18,19 @@ pub struct CellRef {
     pub row: i32,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Error {
+    error_text: String,
+}
+
+impl Error {
+    pub fn new(txt: &str) -> Error {
+        Error {
+            error_text: txt.to_owned(),
+        }
+    }
+}
+
 impl CellRef {
     fn is_unbounded(&self) -> bool {
         // '-1' is a magic number referring to an unbounded reference
@@ -33,6 +47,13 @@ impl CellRef {
             start_col: self.col,
             stop_row: self.row + 1,
             stop_col: self.col + 1,
+        }
+    }
+
+    fn loc(&self) -> CellLocation {
+        CellLocation {
+            row: self.row,
+            col: self.col,
         }
     }
 }
@@ -66,11 +87,18 @@ pub enum EvalResult {
     Error(String),
 }
 
-pub fn parse(input: &str) -> Result<ASTNode, String> {
+pub fn parse(input: &str) -> Result<ASTNode, Error> {
     if input.starts_with('=') {
         let cell_value = input.strip_prefix('=').unwrap().to_string();
-        let mut tokens = super::lexer::lex(&cell_value);
-        return parse_internal(&mut tokens);
+        let tokens = super::lexer::lex(&cell_value);
+        match tokens {
+            Ok(mut tks) => {
+                return parse_internal(&mut tks);
+            }
+            Err(e) => {
+                return Err(Error::new(e));
+            }
+        }
     }
     match input.parse::<f64>() {
         Ok(num) => Ok(ASTNode::Number(num)),
@@ -80,7 +108,7 @@ pub fn parse(input: &str) -> Result<ASTNode, String> {
 
 // evalute gets the display value for the provided AST
 pub fn evaluate(n: ASTNode, ctx: &dyn EvalContext) -> String {
-    let res = evaluate_internal(n, ctx);
+    let res = evaluate_internal(n, &mut vec![], ctx);
     match res {
         EvalResult::Numeric(n) => n.to_string(),
         EvalResult::NonNumeric(s) => s,
@@ -115,13 +143,20 @@ pub fn get_refs(n: &ASTNode) -> Vec<CellRange> {
     refs
 }
 
-fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
+fn evaluate_internal(
+    n: ASTNode,
+    path: &mut Vec<CellLocation>,
+    ctx: &dyn EvalContext,
+) -> EvalResult {
     match n {
         ASTNode::Empty => EvalResult::NonNumeric("".to_owned()),
         ASTNode::Number(n) => EvalResult::Numeric(n),
         ASTNode::Text(t) => EvalResult::NonNumeric(t),
         ASTNode::BinaryExpr { op, lhs, rhs } => {
-            match (evaluate_internal(*lhs, ctx), evaluate_internal(*rhs, ctx)) {
+            match (
+                evaluate_internal(*lhs, path, ctx),
+                evaluate_internal(*rhs, path, ctx),
+            ) {
                 (EvalResult::Numeric(n1), EvalResult::Numeric(n2)) => match op {
                     Operator::Add => EvalResult::Numeric(n1 + n2),
                     Operator::Subtract => EvalResult::Numeric(n1 - n2),
@@ -137,7 +172,7 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
             println!("evaluating function {}", name);
             let mut evaluated_args = vec![];
             for arg in args {
-                let eval_res = evaluate_internal(*arg, ctx);
+                let eval_res = evaluate_internal(*arg, path, ctx);
                 match eval_res {
                     EvalResult::List(results) => {
                         for res in results {
@@ -150,13 +185,19 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
             evaluate_function(&name, evaluated_args)
         }
         ASTNode::Ref(cell_ref) => {
+            if path.contains(&cell_ref.loc()) {
+                return EvalResult::Error("#CIRCULAR".to_owned());
+            }
+            path.push(cell_ref.loc());
             if !cell_ref.is_valid(ctx.num_rows(), ctx.num_cols()) {
                 return EvalResult::Error("#REF".to_owned());
             }
             match ctx.get_cell(cell_ref.row, cell_ref.col) {
                 Some(cell) => {
                     let parsed_val = parse(&cell.value).unwrap();
-                    evaluate_internal(parsed_val, ctx)
+                    let res = evaluate_internal(parsed_val, path, ctx);
+                    path.pop();
+                    res
                 }
                 None => EvalResult::NonNumeric("".to_owned()),
             }
@@ -171,9 +212,13 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
                 for j in start.col..stop.col + 1 {
                     match ctx.get_cell(i, j) {
                         Some(_) => {
-                            let res =
-                                evaluate_internal(ASTNode::Ref(CellRef { row: i, col: j }), ctx);
+                            let res = evaluate_internal(
+                                ASTNode::Ref(CellRef { row: i, col: j }),
+                                path,
+                                ctx,
+                            );
                             results.push(Box::new(res));
+                            path.pop();
                         }
                         None => {}
                     }
@@ -184,7 +229,7 @@ fn evaluate_internal(n: ASTNode, ctx: &dyn EvalContext) -> EvalResult {
     }
 }
 
-pub fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
+pub fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
     if tokens.len() == 0 {
         return Ok(ASTNode::Empty);
     }
@@ -199,11 +244,11 @@ pub fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
             },
             None => parse_cell_ref_or_range(&fst, tokens),
         },
-        x => Err(format!("unrecognized token kind {:?}", x)),
+        x => Err(Error::new(&format!("unrecognized token kind {:?}", x))),
     }
 }
 
-pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
+pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
     let num_node = ASTNode::Number(curr.val.parse::<f64>().unwrap());
     if tokens.len() == 0 {
         return Ok(num_node);
@@ -226,7 +271,7 @@ pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, St
     }
 }
 
-pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
+pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
     let mut start = parse_cell_ref(curr)?;
     let next = tokens.get(0);
 
@@ -265,14 +310,14 @@ pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<
     }
 }
 
-pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
+pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
     let next = tokens.get(0).unwrap();
 
     if next.kind != TokenKind::LParen {
-        return Err(format!(
+        return Err(Error::new(&format!(
             "unexpected token kind after function name: {:?}",
             next.kind
-        ));
+        )));
     }
     tokens.remove(0);
 
@@ -288,29 +333,39 @@ pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, 
     })
 }
 
-pub fn parse_function_argument(tokens: &mut Vec<Token>) -> Result<ASTNode, String> {
-    let arg = parse_internal(tokens);
-    let token = tokens.get(0).unwrap();
-    if token.kind != TokenKind::RParen && token.kind != TokenKind::Comma {
-        return Err("expected comma or right paren after function arg".to_owned());
+pub fn parse_function_argument(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+    let arg = parse_internal(tokens)?;
+    match tokens.get(0) {
+        Some(token) => {
+            if token.kind != TokenKind::RParen && token.kind != TokenKind::Comma {
+                return Err(Error::new(
+                    "expected comma or right paren after function arg",
+                ));
+            }
+            if token.kind == TokenKind::Comma {
+                tokens.remove(0);
+            }
+            Ok(arg)
+        }
+        None => Err(Error::new(
+            "Expected token following argument but found none",
+        )),
     }
-    if token.kind == TokenKind::Comma {
-        tokens.remove(0);
-    }
-    Ok(arg.unwrap())
 }
 
-pub fn get_operator(val: &str) -> Result<Operator, String> {
+pub fn get_operator(val: &str) -> Result<Operator, Error> {
     match val {
         "+" => Ok(Operator::Add),
         "-" => Ok(Operator::Subtract),
         "*" => Ok(Operator::Multiply),
         "/" => Ok(Operator::Divide),
-        x => Err(format!("unrecognized operator {:?}", x).to_owned()),
+        x => Err(Error::new(
+            &format!("unrecognized operator {:?}", x).to_owned(),
+        )),
     }
 }
 
-fn parse_cell_ref(curr: &Token) -> Result<CellRef, String> {
+fn parse_cell_ref(curr: &Token) -> Result<CellRef, Error> {
     let mut col_specified = false;
     let mut row_specified = false;
 
@@ -321,18 +376,22 @@ fn parse_cell_ref(curr: &Token) -> Result<CellRef, String> {
     println!("{:?}", curr.val.chars());
     for c in curr.val.chars() {
         if !col_specified && (c < 'A' || c > 'z') {
-            return Err("expected a letter but did not find one for an ID".to_owned());
+            return Err(Error::new(
+                &"expected a letter but did not find one for an ID".to_owned(),
+            ));
         }
         if c >= 'A' && c <= 'z' {
             if row_specified {
-                return Err("row already specified but found column specifier".to_owned());
+                return Err(Error::new(
+                    &"row already specified but found column specifier".to_owned(),
+                ));
             }
             col_specified = true;
             col_str.push(c);
         }
         if c >= '0' && c <= '9' {
             if !col_specified {
-                return Err("col must be specified before row".to_owned());
+                return Err(Error::new(&"col must be specified before row".to_owned()));
             }
             row_specified = true;
             row_str.push(c);
@@ -344,14 +403,17 @@ fn parse_cell_ref(curr: &Token) -> Result<CellRef, String> {
     if row_specified {
         row = match row_str.parse::<i32>() {
             Ok(n) => Ok(n),
-            Err(_) => Err(format!("cannot parse row number from {}", row_str)),
+            Err(_) => Err(Error::new(&format!(
+                "cannot parse row number from {}",
+                row_str
+            ))),
         }?;
     }
     if row < 0 {
-        return Err(format!(
+        return Err(Error::new(&format!(
             "row number must be a non-negative integer but got {}",
             row
-        ));
+        )));
     }
 
     Ok(CellRef {
