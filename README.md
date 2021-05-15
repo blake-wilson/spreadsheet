@@ -9,4 +9,4 @@ The bundled client is written in Javascript (with React) and is suitable for web
 
 The documentation for the API can be found [here](src/proto/grpc/doc/).
 
-The application is currently deployed [here](https://yellowpapersun.com/projects/spreadsheet").
+The application is currently deployed [here](https://yellowpapersun.com/projects/spreadsheet).
