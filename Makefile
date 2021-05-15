@@ -23,7 +23,7 @@ generate_js_protobuf:
 build-docker:
 	docker build . -t spreadsheet
 
-push docker:
+push-docker:
 	aws ecr get-login-password  --region region | docker login --username --password-stdin ${DOCKER_HOST}
-	docker tag ${DOCKER_HOST}/spreadsheet:latest
+	docker tag spreadsheet:latest ${DOCKER_HOST}/spreadsheet:latest
 	docker push ${DOCKER_HOST}/spreadsheet:latest
