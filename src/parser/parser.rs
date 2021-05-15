@@ -310,22 +310,13 @@ pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<
         None => ASTNode::Ref(start),
     };
 
-    let next = tokens.get(0);
-    match next {
-        Some(t) => match t.kind {
-            TokenKind::BinaryExpr => {
-                let val = t.val.clone();
-                tokens.remove(0);
-                let rhs = parse_internal(tokens)?;
-                Ok(ASTNode::BinaryExpr {
-                    op: get_operator(&val)?,
-                    lhs: Box::new(cell_ref),
-                    rhs: Box::new(rhs),
-                })
-            }
-            _ => Ok(cell_ref),
-        },
-        None => Ok(cell_ref),
+    if tokens.len() == 0 {
+        return Ok(cell_ref);
+    }
+    let next = tokens.get(0).unwrap().clone();
+    match next.kind {
+        TokenKind::BinaryExpr => return parse_binary_expr(cell_ref, &next, tokens),
+        _ => Ok(cell_ref),
     }
 }
 
