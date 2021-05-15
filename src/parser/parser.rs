@@ -171,7 +171,6 @@ fn evaluate_internal(
             }
         }
         ASTNode::Function { name, args } => {
-            println!("evaluating function {}", name);
             let mut evaluated_args = vec![];
             for arg in args {
                 let eval_res = evaluate_internal(*arg, path, ctx);
@@ -205,7 +204,6 @@ fn evaluate_internal(
             }
         }
         ASTNode::Range { start, mut stop } => {
-            println!("evaluate range: {:?}, {:?}", start, stop);
             let mut results = vec![];
             if stop.is_unbounded() {
                 stop.row = ctx.num_rows() - 1;
@@ -252,6 +250,7 @@ pub fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
 }
 
 pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+    println!("parsing number: {:?} {:?}", curr, tokens);
     let num_node = ASTNode::Number(curr.val.parse::<f64>().unwrap());
     if tokens.len() == 0 {
         return Ok(num_node);
@@ -276,18 +275,37 @@ pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Er
 
 pub fn parse_paren_expr(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
     let node = parse_internal(tokens)?;
-    let next = tokens.pop();
-    if next.is_none() || next.unwrap().kind != TokenKind::RParen {
+    if tokens.len() == 0 {
+        return Err(Error::new("unexpected end of paren expression"));
+    }
+    let next = tokens.remove(0);
+    if next.kind != TokenKind::RParen {
         return Err(Error::new("No matching ')' found for '('"));
     }
-    Ok(node)
+    if tokens.len() == 0 {
+        return Ok(node);
+    }
+    let next = tokens.get(0).unwrap().clone();
+    match next.kind {
+        TokenKind::BinaryExpr => parse_binary_expr(node, &next, tokens),
+        _ => Ok(node),
+    }
+}
+
+fn parse_binary_expr(lhs: ASTNode, op: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+    let val = op.val.clone();
+    tokens.remove(0);
+    let rhs = parse_internal(tokens)?;
+    Ok(ASTNode::BinaryExpr {
+        op: get_operator(&val)?,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs),
+    })
 }
 
 pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
     let mut start = parse_cell_ref(curr)?;
     let next = tokens.get(0);
-
-    println!("cell ref or range next token {:?}", next);
 
     let cell_ref = match next {
         Some(t) => match t.kind {
@@ -354,8 +372,6 @@ pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, 
     }
     tokens.remove(0);
 
-    println!("function args are {:?}", args);
-
     Ok(ASTNode::Function {
         name: curr.val.clone(),
         args,
@@ -399,7 +415,6 @@ fn parse_cell_ref(curr: &Token) -> Result<CellRef, Error> {
     let mut row_str = "".to_string();
 
     let mut val = String::new();
-    println!("{:?}", curr.val.chars());
     for c in curr.val.chars() {
         if !col_specified && (c < 'A' || c > 'z') {
             return Err(Error::new(
