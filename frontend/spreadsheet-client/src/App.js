@@ -7,8 +7,8 @@ import {SpreadsheetAPIClient} from './api_grpc_web_pb.js';
 import {GetCellsRequest, InsertCell, InsertCellsRequest, InsertCellsResponse} from './api_pb.js';
 import React, {Component} from 'react';
 
-let hostname = "https://spreadsheet.yellowpapersun.net"
-// let hostname = 'http://localhost:8080';
+// let hostname = "https://spreadsheet.yellowpapersun.net"
+let hostname = 'http://localhost:8080';
 let apiClient = new SpreadsheetAPIClient(hostname,
                                null, null);
 
@@ -118,15 +118,15 @@ class App extends React.Component {
 
   render() {
     let items = [];
-    let header_items = [<td> </td>];
+    let header_items = [<td class="TableCell"> </td>];
     for (let i = 0; i < this.props.numCols; i++) {
-        header_items.push(<td>{ String.fromCharCode('A'.charCodeAt() + i) }</td>);
+        header_items.push(<td class="TableCell">{ String.fromCharCode('A'.charCodeAt() + i) }</td>);
     }
 
     for (let i = 0; i < this.props.numRows; i++) {
         items.push(
             <tr>
-            <td>{ (i + 1).toString()}</td>
+            <td class="TableCell">{ (i + 1).toString()}</td>
             { this.state.table.slice(
             i * this.props.numCols,
             i * this.props.numCols + this.props.numCols)

@@ -1,3 +1,4 @@
+import './TableCell.css';
 import React, {Component} from 'react';
 import {Rect, InsertCell, GetCellsRequest, InsertCellsRequest, InsertCellsResponse} from './api_pb.js';
 import {SpreadsheetAPIClient} from './api_grpc_web_pb.js';
@@ -17,7 +18,7 @@ class TableCell extends React.Component {
 
   render() {
       return (
-          <td onFocus={this.handleFocus} onBlur={this.handleFocusOut} onKeyDown={this.handleKeyDown} contentEditable='true' height="20px" width="72px">
+          <td class="TableCell" onFocus={this.handleFocus} onBlur={this.handleFocusOut} onKeyDown={this.handleKeyDown} contentEditable='true' height="20px" width="72px">
             { this.props.displayValue }
           </td>
       )
