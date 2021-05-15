@@ -1,3 +1,4 @@
+import formulaImage from './formula.png';
 import {Rect} from './api_pb.js';
 import {SpreadsheetAPIClient} from './api_grpc_web_pb.js';
 
@@ -34,8 +35,9 @@ class App extends React.Component {
         value = this.props.cell.value;
     }
     return (
-      <div className="FormulaBar">
-        <input value={value} onKeyDown={this.handleKeyDown} onChange={this.handleChange} style={{ width: "100%" }} />
+      <div className="FormulaBar" style = {{ "margin-bottom": "10px", "margin-top": "10px" }}>
+        <img src={formulaImage} height="28px" /><input value={value} onKeyDown={this.handleKeyDown} onChange={this.handleChange}
+               style={{ width: "90%", "font-size": "22px" }} />
       </div>
     );
   }
