@@ -6,6 +6,8 @@ pub fn evaluate_function(name: &str, args: Vec<EvalResult>) -> EvalResult {
         "AVG" => avg(args),
         "MEDIAN" => median(args),
         "COUNT" => count(args),
+        "ISEVEN" => is_even(args),
+        "ISODD" => is_odd(args),
         _ => EvalResult::NonNumeric("".to_owned()),
     }
 }
@@ -35,8 +37,29 @@ pub fn median(args: Vec<EvalResult>) -> EvalResult {
 }
 
 pub fn count(args: Vec<EvalResult>) -> EvalResult {
-    println!("args: {:?}", args);
     EvalResult::Numeric(args.iter().fold(0f64, |acc, _| acc + 1f64))
+}
+
+pub fn is_even(args: Vec<EvalResult>) -> EvalResult {
+    if args.len() != 1 {
+        return EvalResult::Error("#VALUE!".to_owned());
+    }
+    match args.get(0).unwrap() {
+        EvalResult::Numeric(n) => {
+            if n.fract() != 0.0 {
+                return EvalResult::Error("#VALUE!".to_owned());
+            }
+            EvalResult::Bool((*n as i64) % 2 == 0)
+        }
+        _ => EvalResult::Error("#VALUE!".to_owned()),
+    }
+}
+
+pub fn is_odd(args: Vec<EvalResult>) -> EvalResult {
+    match is_even(args) {
+        EvalResult::Bool(b) => EvalResult::Bool(!b),
+        x => x,
+    }
 }
 
 fn numeric_values(args: Vec<EvalResult>) -> Vec<f64> {

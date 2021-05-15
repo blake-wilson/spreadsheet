@@ -81,6 +81,7 @@ pub enum ASTNode {
 
 #[derive(Debug, PartialEq)]
 pub enum EvalResult {
+    Bool(bool),
     Numeric(f64),
     NonNumeric(String),
     List(Vec<Box<EvalResult>>),
@@ -111,6 +112,7 @@ pub fn evaluate(n: ASTNode, ctx: &dyn EvalContext) -> String {
     let res = evaluate_internal(n, &mut vec![], ctx);
     match res {
         EvalResult::Numeric(n) => n.to_string(),
+        EvalResult::Bool(b) => b.to_string(),
         EvalResult::NonNumeric(s) => s,
         EvalResult::List(_) => "".to_owned(),
         EvalResult::Error(msg) => msg.to_owned(),
