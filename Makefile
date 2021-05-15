@@ -27,3 +27,6 @@ push-docker:
 	aws ecr get-login-password  --region region | docker login --username --password-stdin ${DOCKER_HOST}
 	docker tag spreadsheet:latest ${DOCKER_HOST}/spreadsheet:latest
 	docker push ${DOCKER_HOST}/spreadsheet:latest
+
+gen-docs:
+	docker run --rm -v $$(pwd)/src/proto/grpc/doc:/out -v $$(pwd)/src/proto/grpc:/protos pseudomuto/protoc-gen-doc
