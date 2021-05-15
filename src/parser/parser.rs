@@ -159,15 +159,14 @@ fn evaluate_internal(
                 evaluate_internal(*lhs, path, ctx),
                 evaluate_internal(*rhs, path, ctx),
             ) {
-                (EvalResult::Numeric(n1), EvalResult::Numeric(n2)) => match op {
-                    Operator::Add => EvalResult::Numeric(n1 + n2),
-                    Operator::Subtract => EvalResult::Numeric(n1 - n2),
-                    Operator::Multiply => EvalResult::Numeric(n1 * n2),
-                    Operator::Divide => EvalResult::Numeric(n1 / n2),
-                },
                 (EvalResult::Error(l), _) => EvalResult::Error(l),
                 (_, EvalResult::Error(r)) => EvalResult::Error(r),
-                _ => EvalResult::Numeric(0f64),
+                (l, r) => match op {
+                    Operator::Add => sum(vec![l, r]),
+                    Operator::Subtract => sub(vec![l, r]),
+                    Operator::Multiply => mult(vec![l, r]),
+                    Operator::Divide => div(vec![l, r]),
+                },
             }
         }
         ASTNode::Function { name, args } => {

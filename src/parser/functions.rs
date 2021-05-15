@@ -3,6 +3,9 @@ use super::parser::EvalResult;
 pub fn evaluate_function(name: &str, args: Vec<EvalResult>) -> EvalResult {
     match name.to_uppercase().as_str() {
         "SUM" => sum(args),
+        "SUB" => sub(args),
+        "MULT" => mult(args),
+        "DIV" => div(args),
         "AVG" => avg(args),
         "MEDIAN" => median(args),
         "COUNT" => count(args),
@@ -15,10 +18,42 @@ pub fn evaluate_function(name: &str, args: Vec<EvalResult>) -> EvalResult {
 }
 
 pub fn sum(args: Vec<EvalResult>) -> EvalResult {
+    println!("adding args: {:?}", args);
     let numbers = numeric_values(args);
-    let total = numbers.iter().fold(0f64, |acc, x| acc + x);
+    EvalResult::Numeric(numbers.iter().fold(0f64, |acc, x| acc + x))
+}
 
-    EvalResult::Numeric(total)
+pub fn sub(args: Vec<EvalResult>) -> EvalResult {
+    let numbers = numeric_values(args);
+
+    let initial_val = match numbers.get(0) {
+        Some(n) => *n,
+        None => 0.0,
+    };
+
+    EvalResult::Numeric(numbers[1..].iter().fold(initial_val, |acc, x| acc - x))
+}
+
+pub fn mult(args: Vec<EvalResult>) -> EvalResult {
+    let numbers = numeric_values(args);
+
+    let initial_val = match numbers.get(0) {
+        Some(n) => *n,
+        None => 0.0,
+    };
+
+    EvalResult::Numeric(numbers[1..].iter().fold(initial_val, |acc, x| acc * x))
+}
+
+pub fn div(args: Vec<EvalResult>) -> EvalResult {
+    let numbers = numeric_values(args);
+
+    let initial_val = match numbers.get(0) {
+        Some(n) => *n,
+        None => 0.0,
+    };
+
+    EvalResult::Numeric(numbers[1..].iter().fold(initial_val, |acc, x| acc / x))
 }
 
 pub fn avg(args: Vec<EvalResult>) -> EvalResult {
