@@ -142,8 +142,23 @@ impl FormulaGraph {
     ) -> InsertResult {
         println!("insert cell {:?}", cell);
 
+        // Delete any existing dependencies this cell has marked
+        for (_, deps) in &self.dependencies_map {
+            for dep in deps {
+                let to_delete = RTreeNode {
+                    cell: cell.loc(),
+                    points_to: dep.clone(),
+                };
+                if self.rt.contains(&to_delete) {
+                    println!("deleting RTreeNode: {:?}", to_delete);
+                    self.rt.remove(&to_delete);
+                }
+                (*self.dependents_map.entry(*dep).or_insert(HashSet::new())).remove(&cell.loc());
+            }
+        }
+
         // For each dependency:
-        // 1) Mark the dependency and insert an RTree node containing the dependencies boundaries.
+        // 1) Mark the dependency and insert an RTree node containing the dependency's boundaries.
         // 2) Mark the inserted cell as a dependent of the dependency
         for d in dependencies {
             let to_insert = RTreeNode {
