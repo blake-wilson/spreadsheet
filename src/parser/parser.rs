@@ -239,6 +239,7 @@ pub fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
     match fst.kind {
         TokenKind::Number => parse_number(&fst, tokens),
         TokenKind::Text => Ok(ASTNode::Text(fst.val)),
+        TokenKind::LParen => parse_paren_expr(tokens),
         TokenKind::ID => match tokens.get(0) {
             Some(token) => match token.kind {
                 TokenKind::LParen => parse_function(&fst, tokens),
@@ -271,6 +272,15 @@ pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Er
             Ok(num_node)
         }
     }
+}
+
+pub fn parse_paren_expr(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+    let node = parse_internal(tokens)?;
+    let next = tokens.pop();
+    if next.is_none() || next.unwrap().kind != TokenKind::RParen {
+        return Err(Error::new("No matching ')' found for '('"));
+    }
+    Ok(node)
 }
 
 pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
