@@ -8,6 +8,8 @@ pub fn evaluate_function(name: &str, args: Vec<EvalResult>) -> EvalResult {
         "COUNT" => count(args),
         "ISEVEN" => is_even(args),
         "ISODD" => is_odd(args),
+        "AND" => and(args),
+        "OR" => or(args),
         _ => EvalResult::NonNumeric("".to_owned()),
     }
 }
@@ -62,14 +64,38 @@ pub fn is_odd(args: Vec<EvalResult>) -> EvalResult {
     }
 }
 
+pub fn and(args: Vec<EvalResult>) -> EvalResult {
+    let bools = bool_values(args);
+    EvalResult::Bool(bools.iter().fold(true, |acc, next| acc && *next))
+}
+
+pub fn or(args: Vec<EvalResult>) -> EvalResult {
+    let bools = bool_values(args);
+    EvalResult::Bool(bools.iter().fold(false, |acc, next| acc || *next))
+}
+
+fn bool_values(args: Vec<EvalResult>) -> Vec<bool> {
+    filter_values(args, match_bool)
+}
+
 fn numeric_values(args: Vec<EvalResult>) -> Vec<f64> {
-    args.into_iter()
-        .filter_map(|x| {
-            let num = match x {
-                EvalResult::Numeric(n) => Some(n),
-                _ => None,
-            };
-            num
-        })
-        .collect()
+    filter_values(args, match_number)
+}
+
+fn match_bool(res: EvalResult) -> Option<bool> {
+    match res {
+        EvalResult::Bool(b) => Some(b),
+        _ => None,
+    }
+}
+
+fn match_number(res: EvalResult) -> Option<f64> {
+    match res {
+        EvalResult::Numeric(n) => Some(n),
+        _ => None,
+    }
+}
+
+fn filter_values<T>(args: Vec<EvalResult>, matcher: fn(EvalResult) -> Option<T>) -> Vec<T> {
+    args.into_iter().filter_map(|x| matcher(x)).collect()
 }
