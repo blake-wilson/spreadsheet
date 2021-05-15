@@ -257,19 +257,8 @@ pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Er
     }
     let next = tokens.get(0).unwrap().clone();
     match next.kind {
-        TokenKind::BinaryExpr => {
-            tokens.remove(0);
-            let rhs = parse_internal(tokens)?;
-            Ok(ASTNode::BinaryExpr {
-                op: get_operator(&next.val)?,
-                lhs: Box::new(num_node),
-                rhs: Box::new(rhs),
-            })
-        }
-        _ => {
-            // Only binary expressions can follow numbers
-            Ok(num_node)
-        }
+        TokenKind::BinaryExpr => return parse_binary_expr(num_node, &next, tokens),
+        _ => Ok(num_node),
     }
 }
 

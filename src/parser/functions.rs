@@ -1,6 +1,7 @@
 use super::parser::EvalResult;
 
 pub fn evaluate_function(name: &str, args: Vec<EvalResult>) -> EvalResult {
+    println!("evaluating args: {:?}", args);
     match name.to_uppercase().as_str() {
         "SUM" => sum(args),
         "AVG" => avg(args),
