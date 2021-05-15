@@ -334,10 +334,27 @@ pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, 
     tokens.remove(0);
 
     let mut args = Vec::new();
-    while tokens.get(0).unwrap().kind != TokenKind::RParen {
-        let arg = parse_function_argument(tokens)?;
-        args.push(Box::new(arg));
+    loop {
+        args.push(Box::new(parse_function_argument(tokens)?));
+        if tokens.get(0).is_none() {
+            return Err(Error::new(
+                "Unexpected end of input after function argument",
+            ));
+        }
+        let next = tokens.get(0).unwrap();
+        if next.kind != TokenKind::Comma {
+            break;
+        }
+        tokens.remove(0);
     }
+    if tokens.get(0).is_none() || tokens.get(0).unwrap().kind != TokenKind::RParen {
+        return Err(Error::new(&format!(
+            "No closing parentheses in function arguments",
+        )));
+    }
+    tokens.remove(0);
+
+    println!("function args are {:?}", args);
 
     Ok(ASTNode::Function {
         name: curr.val.clone(),
@@ -353,9 +370,6 @@ pub fn parse_function_argument(tokens: &mut Vec<Token>) -> Result<ASTNode, Error
                 return Err(Error::new(
                     "expected comma or right paren after function arg",
                 ));
-            }
-            if token.kind == TokenKind::Comma {
-                tokens.remove(0);
             }
             Ok(arg)
         }
