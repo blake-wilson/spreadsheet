@@ -9,32 +9,23 @@ class TableCell extends React.Component {
       super(props);
 
       this.onKeyDown = props.onKeyDown
-      this.state = {
-          selected: false,
-      };
 
       this.handleKeyDown = this.handleKeyDown.bind(this);
       this.handleFocus = this.handleFocus.bind(this);
-      this.handleBlur = this.handleBlur.bind(this);
       this.handleValueChanged = this.handleValueChanged.bind(this);
   }
 
-  handleBlur(e) {
-      this.setState({
-          selected: false
-      });
-  }
 
   render() {
       let classNames = "TableCell"
-      if (this.state !== undefined && this.state.selected) {
+      if (this.props.selected) {
           classNames += " SelectedTableCell"
       }
       let displayValue = this.props.cell.displayValue;
       return (
-          <td className={classNames} onBlur={this.handleBlur} onFocus={this.handleFocus} onKeyDown={this.handleKeyDown}>
+          <td className={classNames} onFocus={this.handleFocus} onKeyDown={this.handleKeyDown}>
            <input class="TableInput TableTd" ref={this.props.tableRef} height="100%" onChange={this.handleValueChanged} contentEditable='true'
-                value={ this.state.selected ? this.props.cell.value : this.props.cell.displayValue } />
+                value={ this.props.selected ? this.props.cell.value : this.props.cell.displayValue } />
           </td>
       )
   }
@@ -44,7 +35,6 @@ class TableCell extends React.Component {
   }
 
   handleFocus(e) {
-      this.setState({selected: true});
       this.props.onFocus(this.props.cell.row, this.props.cell.col, this.props.cell.value);
   }
 
