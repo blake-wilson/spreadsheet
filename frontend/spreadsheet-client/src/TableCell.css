@@ -1,3 +1,9 @@
 .TableCell {
     text-align: center;
+    overflow: hidden;
+}
+
+.SelectedTableCell {
+    text-align: center;
+    overflow-x: auto;
 }

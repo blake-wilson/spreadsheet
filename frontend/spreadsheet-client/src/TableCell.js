@@ -10,6 +10,7 @@ class TableCell extends React.Component {
 
       this.onKeyDown = props.onKeyDown
       this.onFocus = props.onFocus
+      this.state = {selected: false};
 
       this.handleKeyDown = this.handleKeyDown.bind(this);
       this.handleFocus = this.handleFocus.bind(this);
@@ -17,19 +18,27 @@ class TableCell extends React.Component {
   }
 
   render() {
+      let classNames = "TableCell"
+       if (this.state.selected) {
+           classNames += " SelectedTableCell"
+       }
       return (
-          <td class="TableCell" onFocus={this.handleFocus} onBlur={this.handleFocusOut} onKeyDown={this.handleKeyDown} contentEditable='true' height="20px" width="72px">
-            { this.props.displayValue }
+          <td onFocus={this.handleFocus} onBlur={this.handleFocusOut} onKeyDown={this.handleKeyDown} style={{ "max-width": "72px", "min-width": "72px" }}>
+            <div className={classNames} height="100%" width="92%" contentEditable='true'>
+                { this.props.displayValue }
+            </div>
           </td>
       )
   }
 
   handleFocus(e) {
+      this.setState({selected: true});
       e.target.innerText = this.props.value;
       this.onFocus(this.props.row, this.props.col, this.props.value);
   }
 
   handleFocusOut(e) {
+      this.setState({selected: false});
       e.target.innerText = this.props.displayValue;
   }
 
