@@ -20,6 +20,7 @@ class App extends React.Component {
       this.handleKeyDown = this.handleKeyDown.bind(this);
       this.handleTableCellFocus = this.handleTableCellFocus.bind(this);
       this.handleFormulaBarChanged = this.handleFormulaBarChanged.bind(this);
+      this.handleTableCellChanged = this.handleTableCellChanged.bind(this);
       this.handleCellInsert = this.handleCellInsert.bind(this);
 
       const items = [];
@@ -27,8 +28,8 @@ class App extends React.Component {
           const cells = [];
           for (let j = 0; j < this.props.numCols; j++) {
               let cell = <TableCell key={i*this.props.numCols + j}
-                          width="72px" height="24px" row={i} col={j} value=""
-                          displayValue = "" onKeyDown={this.handleKeyDown}
+                         onChanged={this.handleTableCellChanged} cell={{row: i, col: j, value:"",
+                          displayValue: ""}} onKeyDown={this.handleKeyDown}
                           onFocus={this.handleTableCellFocus} />;
               items.push(cell);
           }
@@ -61,7 +62,7 @@ class App extends React.Component {
       let table = [...this.state.table];
       let idx = row * this.props.numCols + col
       let tableCell = {...table[idx], value: c.getValue(), displayValue: c.getDisplayValue()};
-      tableCell.props = {...tableCell.props, value: c.getValue(), displayValue: c.getDisplayValue()};
+      tableCell.props = {...tableCell.props, cell: {...tableCell.props.cell, value: c.getValue(), displayValue: c.getDisplayValue()}};
       table[idx] = tableCell;
       this.setState({table: table});
     }
@@ -79,7 +80,6 @@ class App extends React.Component {
         console.log(`Unexpected error for insertCells: code = ${err.code}` +
                     `, message = "${err.message}"`);
       } else {
-          console.log("inserted " + response.getCellsList() + " cells");
           this.insertIntoTable(response.getCellsList());
       }
     });
@@ -97,7 +97,6 @@ class App extends React.Component {
         console.log(`Unexpected error for insertCells: code = ${err.code}` +
                     `, message = "${err.message}"`);
       } else {
-          console.log("inserted " + response.getCellsList() + " cells");
           this.insertIntoTable(response.getCellsList());
       }
     });
@@ -113,6 +112,12 @@ class App extends React.Component {
 
   handleFormulaBarChanged(value) {
       let selectedCell = {...this.state.selectedCell, value: value};
+      this.setState({selectedCell: selectedCell});
+  }
+
+  handleTableCellChanged(targetCell, textContent) {
+      let cell = {...targetCell, value: textContent};
+      let selectedCell = {...this.state.selectedCell, value: textContent};
       this.setState({selectedCell: selectedCell});
   }
 

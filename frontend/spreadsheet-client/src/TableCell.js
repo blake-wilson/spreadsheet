@@ -15,6 +15,7 @@ class TableCell extends React.Component {
       this.handleKeyDown = this.handleKeyDown.bind(this);
       this.handleFocus = this.handleFocus.bind(this);
       this.handleFocusOut = this.handleFocusOut.bind(this);
+      this.handleValueChanged = this.handleValueChanged.bind(this);
   }
 
   render() {
@@ -23,23 +24,27 @@ class TableCell extends React.Component {
            classNames += " SelectedTableCell"
        }
       return (
-          <td onFocus={this.handleFocus} onBlur={this.handleFocusOut} onKeyDown={this.handleKeyDown} style={{ "max-width": "72px", "min-width": "72px" }}>
-            <div className={classNames} height="100%" width="92%" contentEditable='true'>
-                { this.props.displayValue }
+          <td onFocus={this.handleFocus}  onBlur={this.handleFocusOut} onKeyDown={this.handleKeyDown} style={{ "max-width": "72px", "min-width": "72px" }}>
+            <div className={classNames} height="100%" width="92%" onInput={this.handleValueChanged} contentEditable='true'>
+                { this.props.cell.displayValue }
             </div>
           </td>
       )
   }
 
+  handleValueChanged(e) {
+      this.props.onChanged(this.props.cell, e.target.innerText);
+  }
+
   handleFocus(e) {
       this.setState({selected: true});
-      e.target.innerText = this.props.value;
-      this.onFocus(this.props.row, this.props.col, this.props.value);
+      e.target.innerText = this.props.cell.value;
+      this.props.onChanged(this.props.cell, e.target.innerText);
   }
 
   handleFocusOut(e) {
       this.setState({selected: false});
-      e.target.innerText = this.props.displayValue;
+      e.target.innerText = this.props.cell.displayValue;
   }
 
   handleKeyDown(e) {
@@ -49,7 +54,7 @@ class TableCell extends React.Component {
     e.preventDefault();
 
     let target = e.target;
-    this.onKeyDown(this.props.row, this.props.col, target.textContent, target);
+    this.onKeyDown(this.props.cell.row, this.props.cell.col, target.textContent, target);
   }
 }
 
