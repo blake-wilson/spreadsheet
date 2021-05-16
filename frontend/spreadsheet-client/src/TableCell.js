@@ -15,17 +15,17 @@ class TableCell extends React.Component {
       this.handleValueChanged = this.handleValueChanged.bind(this);
   }
 
-
   render() {
       let classNames = "TableCell"
       if (this.props.selected) {
           classNames += " SelectedTableCell"
       }
       let displayValue = this.props.cell.displayValue;
+      let enteredValue = this.props.enteredValue !== undefined ? this.props.enteredValue : this.props.cell.value;
       return (
           <td className={classNames} onFocus={this.handleFocus} onKeyDown={this.handleKeyDown}>
            <input class="TableInput TableTd" ref={this.props.tableRef} height="100%" onChange={this.handleValueChanged} contentEditable='true'
-                value={ this.props.selected ? this.props.cell.value : this.props.cell.displayValue } />
+                value={ this.props.selected ? enteredValue : this.props.cell.displayValue } />
           </td>
       )
   }
@@ -45,12 +45,7 @@ class TableCell extends React.Component {
     e.preventDefault();
 
     let target = e.target;
-    let cell = {
-        row: this.props.cell.row,
-        col: this.props.cell.col,
-        value: e.target.value,
-    }
-    this.onKeyDown(cell);
+    this.onKeyDown(this.props.cell, this.props.enteredValue);
   }
 }
 

@@ -7,8 +7,8 @@ import {SpreadsheetAPIClient} from './api_grpc_web_pb.js';
 import {GetCellsRequest, InsertCell, InsertCellsRequest, InsertCellsResponse} from './api_pb.js';
 import React, {Component} from 'react';
 
-// let hostname = "https://spreadsheet.yellowpapersun.net"
-let hostname = 'http://localhost:8080';
+let hostname = "https://spreadsheet.yellowpapersun.net"
+// let hostname = 'http://localhost:8080';
 let apiClient = new SpreadsheetAPIClient(hostname,
                                null, null);
 
@@ -24,6 +24,7 @@ class App extends React.Component {
       this.handleCellInsert = this.handleCellInsert.bind(this);
       this.handleTableCellSubmit = this.handleTableCellSubmit.bind(this);
       this.focusAt = this.focusAt.bind(this);
+      this.handleFormulaBarSubmit = this.handleFormulaBarSubmit.bind(this);
 
       const items = [];
       for (let i = 0; i < this.props.numRows; i++) {
@@ -62,8 +63,8 @@ class App extends React.Component {
       var col = c.getCol();
       let table = [...this.state.table];
       let idx = row * this.props.numCols + col
-      let tableCell = {...table[idx], value: c.getValue(), displayValue: c.getDisplayValue()};
-      tableCell.props = {...tableCell.props, cell: {...tableCell.props.cell, value: c.getValue(), displayValue: c.getDisplayValue()}};
+      let tableCell = {...table[idx]};
+      tableCell.props = {...tableCell.props, cell: {row:row, col: col, value: c.getValue(), displayValue: c.getDisplayValue()}};
       table[idx] = tableCell;
       this.setState({table: table});
     }
@@ -86,7 +87,15 @@ class App extends React.Component {
     });
   }
 
-  handleTableCellSubmit(cell) {
+  handleTableCellSubmit(cell, newValue) {
+      if (newValue !== undefined && (newValue !== cell.value)) {
+        let toInsert = {...cell, value: newValue};
+        this.handleCellInsert(toInsert);
+      }
+      this.focusAt(cell.row + 1, cell.col);
+  }
+
+  handleFormulaBarSubmit(cell) {
       this.handleCellInsert(cell);
       this.focusAt(cell.row + 1, cell.col);
   }
@@ -141,10 +150,20 @@ class App extends React.Component {
   handleFormulaBarChanged(value) {
       let selectedCell = {...this.state.selectedCell, value: value};
       this.setState({selectedCell: selectedCell});
+
+      let table = [...this.state.table];
+      let idx = selectedCell.row * this.props.numCols + selectedCell.col
+      let tableCell = table[idx];
+      let insertCell = tableCell.props.cell;
+      let newProps = {...tableCell.props, cell: insertCell, enteredValue: value };
+      table[idx] = {...tableCell, props: newProps};
+      this.setState({
+          table: table,
+      });
   }
 
   handleTableCellChanged(targetCell, textContent) {
-      let cell = {...targetCell, value: textContent};
+      let cell = targetCell;
       let selectedCell = {...this.state.selectedCell, value: textContent};
       this.setState({selectedCell: selectedCell});
 
@@ -152,7 +171,7 @@ class App extends React.Component {
       let idx = cell.row * this.props.numCols + cell.col
       let tableCell = table[idx];
       let insertCell = tableCell.props.cell;
-      let newProps = {...tableCell.props, cell: {...insertCell, value: textContent}};
+      let newProps = {...tableCell.props, cell: insertCell, enteredValue: textContent };
       table[idx] = {...tableCell, props: newProps};
       this.setState({
           table: table,
@@ -181,7 +200,7 @@ class App extends React.Component {
         <header className="App-header">
         <div>
           <FormulaBar cell={ this.state.selectedCell } onChanged={this.handleFormulaBarChanged} 
-                            onSubmit={this.handleCellInsert} />
+                            onSubmit={this.handleFormulaBarSubmit} />
             <table border="1px solid white"> 
               <tr>
                   { header_items }
