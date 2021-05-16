@@ -23,10 +23,6 @@ rstar = "0.8.2"
 protoc-grpcio = "3.0.0"
 
 [[bin]]
-name = "spreadsheet_client"
-path = "src/client.rs"
-
-[[bin]]
 name = "spreadsheet_server"
 path = "src/server.rs"
 
