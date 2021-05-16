@@ -7,8 +7,8 @@ import {SpreadsheetAPIClient} from './api_grpc_web_pb.js';
 import {GetCellsRequest, InsertCell, InsertCellsRequest, InsertCellsResponse} from './api_pb.js';
 import React, {Component} from 'react';
 
-// let hostname = "https://spreadsheet.yellowpapersun.net"
-let hostname = 'http://localhost:8080';
+let hostname = "https://spreadsheet.yellowpapersun.net"
+// let hostname = 'http://localhost:8080';
 let apiClient = new SpreadsheetAPIClient(hostname,
                                null, null);
 

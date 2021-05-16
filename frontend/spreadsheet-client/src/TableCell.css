@@ -1,6 +1,9 @@
 .TableCell {
     text-align: center;
     overflow: hidden;
+    max-width: 72px;
+    min-width: 72px;
+    overflow-wrap: normal;
 }
 
 .SelectedTableCell {

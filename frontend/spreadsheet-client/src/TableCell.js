@@ -9,7 +9,6 @@ class TableCell extends React.Component {
       super(props);
 
       this.onKeyDown = props.onKeyDown
-      this.onFocus = props.onFocus
       this.state = {selected: false};
 
       this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -24,7 +23,7 @@ class TableCell extends React.Component {
            classNames += " SelectedTableCell"
        }
       return (
-          <td onFocus={this.handleFocus}  onBlur={this.handleFocusOut} onKeyDown={this.handleKeyDown} style={{ "max-width": "72px", "min-width": "72px" }}>
+          <td onFocus={this.handleFocus}  onBlur={this.handleFocusOut} onKeyDown={this.handleKeyDown}>
             <div className={classNames} height="100%" width="92%" onInput={this.handleValueChanged} contentEditable='true'>
                 { this.props.cell.displayValue }
             </div>
