@@ -9,4 +9,5 @@
 .SelectedTableCell {
     text-align: center;
     overflow-x: auto;
+    border:1px solid green;
 }

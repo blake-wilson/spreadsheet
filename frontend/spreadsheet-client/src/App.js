@@ -18,9 +18,9 @@ class App extends React.Component {
       super(props);
 
       this.handleKeyDown = this.handleKeyDown.bind(this);
-      this.handleTableCellFocus = this.handleTableCellFocus.bind(this);
       this.handleFormulaBarChanged = this.handleFormulaBarChanged.bind(this);
       this.handleTableCellChanged = this.handleTableCellChanged.bind(this);
+      this.handleTableCellFocused = this.handleTableCellFocused.bind(this);
       this.handleCellInsert = this.handleCellInsert.bind(this);
 
       const items = [];
@@ -28,9 +28,8 @@ class App extends React.Component {
           const cells = [];
           for (let j = 0; j < this.props.numCols; j++) {
               let cell = <TableCell key={i*this.props.numCols + j}
-                         onChanged={this.handleTableCellChanged} cell={{row: i, col: j, value:"",
-                          displayValue: ""}} onKeyDown={this.handleKeyDown}
-                          onFocus={this.handleTableCellFocus} />;
+                         onChanged={this.handleTableCellChanged} onFocus={this.handleTableCellFocused} cell={{row: i, col: j, value:"",
+                          displayValue: ""}} tableRef={React.createRef()} onKeyDown={this.handleCellInsert} />;
               items.push(cell);
           }
       }
@@ -86,6 +85,7 @@ class App extends React.Component {
   }
 
   handleCellInsert(cell) {
+    console.log("insert cell: ", cell);
     var c1 = new InsertCell();
     c1.setRow(cell.row);
     c1.setCol(cell.col);
@@ -102,12 +102,33 @@ class App extends React.Component {
     });
   }
 
-  handleTableCellFocus(row, col, textContent) {
-     this.setState({selectedCell: {
-         row: row,
-         col: col,
-         value: textContent
-     }});
+  handleTableCellFocused(row, col, textContent) {
+      console.log("handling focus", row, col);
+      let table = [...this.state.table];
+      if (this.state.currSelection !== undefined) {
+          let currIdx = this.state.currSelection.row *
+            this.props.numCols + this.state.currSelection.col
+          let newCell = table[currIdx];
+          let newProps = {...newCell.props, selected: false};
+          table[currIdx] = {...newCell, props: newProps};
+          console.log("cleared selection for idx", currIdx);
+      }
+
+      let idx = row * this.props.numCols + col
+      console.log(idx);
+      let tableCell = table[idx];
+      let newProps = {...tableCell.props, selected: true};
+      table[idx] = {...tableCell, props: newProps};
+      this.setState({
+          table: table,
+          currSelection: {row: row, col: col},
+          selectedCell: {
+            row: row,
+            col: col,
+            value: textContent
+          }
+      });
+      table[idx].props.tableRef.current.focus();
   }
 
   handleFormulaBarChanged(value) {

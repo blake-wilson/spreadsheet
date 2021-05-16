@@ -9,23 +9,21 @@ class TableCell extends React.Component {
       super(props);
 
       this.onKeyDown = props.onKeyDown
-      this.state = {selected: false};
 
       this.handleKeyDown = this.handleKeyDown.bind(this);
       this.handleFocus = this.handleFocus.bind(this);
-      this.handleFocusOut = this.handleFocusOut.bind(this);
       this.handleValueChanged = this.handleValueChanged.bind(this);
   }
 
   render() {
       let classNames = "TableCell"
-       if (this.state.selected) {
-           classNames += " SelectedTableCell"
-       }
+      if (this.props.selected) {
+          classNames += " SelectedTableCell"
+      }
       return (
-          <td onFocus={this.handleFocus}  onBlur={this.handleFocusOut} onKeyDown={this.handleKeyDown}>
-            <div className={classNames} height="100%" width="92%" onInput={this.handleValueChanged} contentEditable='true'>
-                { this.props.cell.displayValue }
+          <td onFocus={this.handleFocus} onKeyDown={this.handleKeyDown}>
+            <div ref={this.props.tableRef} className={classNames} height="100%" width="92%" onInput={this.handleValueChanged} contentEditable='true'>
+                { this.props.selected ? this.props.cell.value : this.props.cell.displayValue }
             </div>
           </td>
       )
@@ -36,14 +34,7 @@ class TableCell extends React.Component {
   }
 
   handleFocus(e) {
-      this.setState({selected: true});
-      e.target.innerText = this.props.cell.value;
-      this.props.onChanged(this.props.cell, e.target.innerText);
-  }
-
-  handleFocusOut(e) {
-      this.setState({selected: false});
-      e.target.innerText = this.props.cell.displayValue;
+      this.props.onFocus(this.props.cell.row, this.props.cell.col, this.props.cell.value);
   }
 
   handleKeyDown(e) {
@@ -53,7 +44,15 @@ class TableCell extends React.Component {
     e.preventDefault();
 
     let target = e.target;
-    this.onKeyDown(this.props.cell.row, this.props.cell.col, target.textContent, target);
+    let cell = {
+        row: this.props.cell.row,
+        col: this.props.cell.col,
+        value: e.target.innerText,
+    }
+    console.log("calling handler for cell: ", cell);
+    this.onKeyDown(cell);
+    console.log("curr row:", this.props.cell.row, "new row", (this.props.cell.row + 1) % 20);
+    this.props.onFocus((this.props.cell.row + 1) % 20, this.props.cell.col, cell.value);
   }
 }
 
