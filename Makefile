@@ -24,7 +24,7 @@ build-docker:
 	docker build . -t spreadsheet
 
 push-docker:
-	aws ecr get-login-password  --region region | docker login --username --password-stdin ${DOCKER_HOST}
+	aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${DOCKER_HOST}
 	docker tag spreadsheet:latest ${DOCKER_HOST}/spreadsheet:latest
 	docker push ${DOCKER_HOST}/spreadsheet:latest
 
