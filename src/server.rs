@@ -75,7 +75,7 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
         let cells: Vec<models::Cell>;
         {
             self.create_table_if_not_exists(req.get_tableId());
-            let cs = &mut self.cells_service.write().unwrap();
+            let cs = &mut self.cells_service.read().unwrap();
             let service = cs.get(req.get_tableId()).unwrap();
             cells = service.get_cells(rect);
         }
