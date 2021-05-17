@@ -17,7 +17,7 @@ generate_rs_protobuf:
 	cargo build
 
 generate_js_protobuf:
-	export PATH="$$PATH:$$(pwd)/frontend"; cd frontend && protoc -I=../src/proto/grpc ../src/proto/grpc/api.proto --js_out=import_style=commonjs:spreadsheet-client --grpc-web_out=import_style=commonjs,mode=grpcwebtext:spreadsheet-client
+	export PATH="$$PATH:$$(pwd)/frontend"; cd frontend && protoc -I=../src/proto/grpc ../src/proto/grpc/api.proto --js_out=import_style=commonjs:spreadsheet-client/src --grpc-web_out=import_style=commonjs,mode=grpcwebtext:spreadsheet-client/src
 
 
 build-docker:
