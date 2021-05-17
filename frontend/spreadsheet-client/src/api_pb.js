@@ -805,7 +805,7 @@ proto.spreadsheet.Cell.prototype.setDisplayValue = function(value) {
  * @private {!Array<number>}
  * @const
  */
-proto.spreadsheet.InsertCellsRequest.repeatedFields_ = [1];
+proto.spreadsheet.InsertCellsRequest.repeatedFields_ = [2];
 
 
 
@@ -838,6 +838,7 @@ proto.spreadsheet.InsertCellsRequest.prototype.toObject = function(opt_includeIn
  */
 proto.spreadsheet.InsertCellsRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
+    tableid: jspb.Message.getFieldWithDefault(msg, 1, ""),
     cellsList: jspb.Message.toObjectList(msg.getCellsList(),
     proto.spreadsheet.InsertCell.toObject, includeInstance)
   };
@@ -877,6 +878,10 @@ proto.spreadsheet.InsertCellsRequest.deserializeBinaryFromReader = function(msg,
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setTableid(value);
+      break;
+    case 2:
       var value = new proto.spreadsheet.InsertCell;
       reader.readMessage(value,proto.spreadsheet.InsertCell.deserializeBinaryFromReader);
       msg.addCells(value);
@@ -910,10 +915,17 @@ proto.spreadsheet.InsertCellsRequest.prototype.serializeBinary = function() {
  */
 proto.spreadsheet.InsertCellsRequest.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
+  f = message.getTableid();
+  if (f.length > 0) {
+    writer.writeString(
+      1,
+      f
+    );
+  }
   f = message.getCellsList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
-      1,
+      2,
       f,
       proto.spreadsheet.InsertCell.serializeBinaryToWriter
     );
@@ -922,12 +934,30 @@ proto.spreadsheet.InsertCellsRequest.serializeBinaryToWriter = function(message,
 
 
 /**
- * repeated InsertCell cells = 1;
+ * optional string tableId = 1;
+ * @return {string}
+ */
+proto.spreadsheet.InsertCellsRequest.prototype.getTableid = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 1, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.spreadsheet.InsertCellsRequest} returns this
+ */
+proto.spreadsheet.InsertCellsRequest.prototype.setTableid = function(value) {
+  return jspb.Message.setProto3StringField(this, 1, value);
+};
+
+
+/**
+ * repeated InsertCell cells = 2;
  * @return {!Array<!proto.spreadsheet.InsertCell>}
  */
 proto.spreadsheet.InsertCellsRequest.prototype.getCellsList = function() {
   return /** @type{!Array<!proto.spreadsheet.InsertCell>} */ (
-    jspb.Message.getRepeatedWrapperField(this, proto.spreadsheet.InsertCell, 1));
+    jspb.Message.getRepeatedWrapperField(this, proto.spreadsheet.InsertCell, 2));
 };
 
 
@@ -936,7 +966,7 @@ proto.spreadsheet.InsertCellsRequest.prototype.getCellsList = function() {
  * @return {!proto.spreadsheet.InsertCellsRequest} returns this
 */
 proto.spreadsheet.InsertCellsRequest.prototype.setCellsList = function(value) {
-  return jspb.Message.setRepeatedWrapperField(this, 1, value);
+  return jspb.Message.setRepeatedWrapperField(this, 2, value);
 };
 
 
@@ -946,7 +976,7 @@ proto.spreadsheet.InsertCellsRequest.prototype.setCellsList = function(value) {
  * @return {!proto.spreadsheet.InsertCell}
  */
 proto.spreadsheet.InsertCellsRequest.prototype.addCells = function(opt_value, opt_index) {
-  return jspb.Message.addToRepeatedWrapperField(this, 1, opt_value, proto.spreadsheet.InsertCell, opt_index);
+  return jspb.Message.addToRepeatedWrapperField(this, 2, opt_value, proto.spreadsheet.InsertCell, opt_index);
 };
 
 
@@ -1151,6 +1181,7 @@ proto.spreadsheet.GetCellsRequest.prototype.toObject = function(opt_includeInsta
  */
 proto.spreadsheet.GetCellsRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
+    tableid: jspb.Message.getFieldWithDefault(msg, 1, ""),
     rect: (f = msg.getRect()) && proto.spreadsheet.Rect.toObject(includeInstance, f)
   };
 
@@ -1189,6 +1220,10 @@ proto.spreadsheet.GetCellsRequest.deserializeBinaryFromReader = function(msg, re
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setTableid(value);
+      break;
+    case 2:
       var value = new proto.spreadsheet.Rect;
       reader.readMessage(value,proto.spreadsheet.Rect.deserializeBinaryFromReader);
       msg.setRect(value);
@@ -1222,10 +1257,17 @@ proto.spreadsheet.GetCellsRequest.prototype.serializeBinary = function() {
  */
 proto.spreadsheet.GetCellsRequest.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
+  f = message.getTableid();
+  if (f.length > 0) {
+    writer.writeString(
+      1,
+      f
+    );
+  }
   f = message.getRect();
   if (f != null) {
     writer.writeMessage(
-      1,
+      2,
       f,
       proto.spreadsheet.Rect.serializeBinaryToWriter
     );
@@ -1234,12 +1276,30 @@ proto.spreadsheet.GetCellsRequest.serializeBinaryToWriter = function(message, wr
 
 
 /**
- * optional Rect rect = 1;
+ * optional string tableId = 1;
+ * @return {string}
+ */
+proto.spreadsheet.GetCellsRequest.prototype.getTableid = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 1, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.spreadsheet.GetCellsRequest} returns this
+ */
+proto.spreadsheet.GetCellsRequest.prototype.setTableid = function(value) {
+  return jspb.Message.setProto3StringField(this, 1, value);
+};
+
+
+/**
+ * optional Rect rect = 2;
  * @return {?proto.spreadsheet.Rect}
  */
 proto.spreadsheet.GetCellsRequest.prototype.getRect = function() {
   return /** @type{?proto.spreadsheet.Rect} */ (
-    jspb.Message.getWrapperField(this, proto.spreadsheet.Rect, 1));
+    jspb.Message.getWrapperField(this, proto.spreadsheet.Rect, 2));
 };
 
 
@@ -1248,7 +1308,7 @@ proto.spreadsheet.GetCellsRequest.prototype.getRect = function() {
  * @return {!proto.spreadsheet.GetCellsRequest} returns this
 */
 proto.spreadsheet.GetCellsRequest.prototype.setRect = function(value) {
-  return jspb.Message.setWrapperField(this, 1, value);
+  return jspb.Message.setWrapperField(this, 2, value);
 };
 
 
@@ -1266,7 +1326,7 @@ proto.spreadsheet.GetCellsRequest.prototype.clearRect = function() {
  * @return {boolean}
  */
 proto.spreadsheet.GetCellsRequest.prototype.hasRect = function() {
-  return jspb.Message.getField(this, 1) != null;
+  return jspb.Message.getField(this, 2) != null;
 };
 
 

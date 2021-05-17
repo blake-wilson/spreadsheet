@@ -7,8 +7,9 @@ use futures::executor::block_on;
 use futures::prelude::*;
 use grpcio::{ChannelBuilder, Environment, ResourceQuota, RpcContext, ServerBuilder, UnarySink};
 use service::CellsService;
+use std::collections::HashMap;
 use std::io::Read;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use std::{io, thread};
 
 #[path = "proto/grpc/api.rs"]
@@ -18,7 +19,17 @@ mod api_grpc;
 
 #[derive(Clone)]
 struct SpreadsheetService {
-    cells_service: Arc<Mutex<service::MemoryCellsService>>,
+    cells_service: Arc<RwLock<HashMap<String, service::MemoryCellsService>>>,
+}
+
+impl SpreadsheetService {
+    fn create_table_if_not_exists(&mut self, table_id: &str) {
+        self.cells_service
+            .write()
+            .unwrap()
+            .entry(table_id.to_owned())
+            .or_insert(service::MemoryCellsService::new(50, 26));
+    }
 }
 
 impl api_grpc::SpreadsheetApi for SpreadsheetService {
@@ -28,24 +39,19 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
         req: api::InsertCellsRequest,
         sink: UnarySink<api::InsertCellsResponse>,
     ) {
-        for c in req.get_cells() {
-            println!(
-                "inserting cell {:?} at row {:?} and col {:?}",
-                c.get_value(),
-                c.get_row(),
-                c.get_col()
-            );
-        }
         let insert_res: Result<Vec<models::Cell>, parser::Error>;
         {
             let cells = insert_cells_to_models(req.get_cells());
-            let mut cs = self.cells_service.lock().unwrap();
-            insert_res = cs.insert_cells(&cells);
+            self.create_table_if_not_exists(req.get_tableId());
+
+            let cs = &mut self.cells_service.write().unwrap();
+            let service = cs.get_mut(req.get_tableId()).unwrap();
+
+            insert_res = service.insert_cells(&cells);
         }
         let mut resp = api::InsertCellsResponse::default();
         match insert_res {
             Ok(inserted_cells) => {
-                println!("inserted cells: {:?}", inserted_cells);
                 resp.set_cells(protobuf::RepeatedField::from_vec(model_cells_to_api(
                     inserted_cells,
                 )));
@@ -58,6 +64,7 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
             .map(|_| ());
         ctx.spawn(f);
     }
+
     fn get_cells(
         &mut self,
         ctx: RpcContext<'_>,
@@ -67,8 +74,10 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
         let rect = api_rect_to_model(req.get_rect());
         let cells: Vec<models::Cell>;
         {
-            let cs = self.cells_service.lock().unwrap();
-            cells = cs.get_cells(rect);
+            self.create_table_if_not_exists(req.get_tableId());
+            let cs = &mut self.cells_service.write().unwrap();
+            let service = cs.get(req.get_tableId()).unwrap();
+            cells = service.get_cells(rect);
         }
         let mut resp = api::GetCellsResponse::default();
         resp.set_cells(protobuf::RepeatedField::from_vec(model_cells_to_api(cells)));
@@ -82,9 +91,8 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
 }
 
 fn main() {
-    let cells_service = service::MemoryCellsService::new(50, 26);
     let ss_service = SpreadsheetService {
-        cells_service: Arc::new(Mutex::new(cells_service)),
+        cells_service: Arc::new(RwLock::new(HashMap::new())),
     };
 
     let env = Arc::new(Environment::new(1));

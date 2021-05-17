@@ -783,6 +783,7 @@ impl ::protobuf::reflect::ProtobufValue for Cell {
 #[derive(PartialEq,Clone,Default)]
 pub struct InsertCellsRequest {
     // message fields
+    pub tableId: ::std::string::String,
     pub cells: ::protobuf::RepeatedField<InsertCell>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -800,7 +801,33 @@ impl InsertCellsRequest {
         ::std::default::Default::default()
     }
 
-    // repeated .spreadsheet.InsertCell cells = 1;
+    // string tableId = 1;
+
+
+    pub fn get_tableId(&self) -> &str {
+        &self.tableId
+    }
+    pub fn clear_tableId(&mut self) {
+        self.tableId.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_tableId(&mut self, v: ::std::string::String) {
+        self.tableId = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_tableId(&mut self) -> &mut ::std::string::String {
+        &mut self.tableId
+    }
+
+    // Take field
+    pub fn take_tableId(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.tableId, ::std::string::String::new())
+    }
+
+    // repeated .spreadsheet.InsertCell cells = 2;
 
 
     pub fn get_cells(&self) -> &[InsertCell] {
@@ -841,6 +868,9 @@ impl ::protobuf::Message for InsertCellsRequest {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.tableId)?;
+                },
+                2 => {
                     ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.cells)?;
                 },
                 _ => {
@@ -855,6 +885,9 @@ impl ::protobuf::Message for InsertCellsRequest {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
+        if !self.tableId.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.tableId);
+        }
         for value in &self.cells {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
@@ -865,8 +898,11 @@ impl ::protobuf::Message for InsertCellsRequest {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if !self.tableId.is_empty() {
+            os.write_string(1, &self.tableId)?;
+        }
         for v in &self.cells {
-            os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_tag(2, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         };
@@ -908,6 +944,11 @@ impl ::protobuf::Message for InsertCellsRequest {
         static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "tableId",
+                |m: &InsertCellsRequest| { &m.tableId },
+                |m: &mut InsertCellsRequest| { &mut m.tableId },
+            ));
             fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<InsertCell>>(
                 "cells",
                 |m: &InsertCellsRequest| { &m.cells },
@@ -929,6 +970,7 @@ impl ::protobuf::Message for InsertCellsRequest {
 
 impl ::protobuf::Clear for InsertCellsRequest {
     fn clear(&mut self) {
+        self.tableId.clear();
         self.cells.clear();
         self.unknown_fields.clear();
     }
@@ -1115,6 +1157,7 @@ impl ::protobuf::reflect::ProtobufValue for InsertCellsResponse {
 #[derive(PartialEq,Clone,Default)]
 pub struct GetCellsRequest {
     // message fields
+    pub tableId: ::std::string::String,
     pub rect: ::protobuf::SingularPtrField<Rect>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -1132,7 +1175,33 @@ impl GetCellsRequest {
         ::std::default::Default::default()
     }
 
-    // .spreadsheet.Rect rect = 1;
+    // string tableId = 1;
+
+
+    pub fn get_tableId(&self) -> &str {
+        &self.tableId
+    }
+    pub fn clear_tableId(&mut self) {
+        self.tableId.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_tableId(&mut self, v: ::std::string::String) {
+        self.tableId = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_tableId(&mut self) -> &mut ::std::string::String {
+        &mut self.tableId
+    }
+
+    // Take field
+    pub fn take_tableId(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.tableId, ::std::string::String::new())
+    }
+
+    // .spreadsheet.Rect rect = 2;
 
 
     pub fn get_rect(&self) -> &Rect {
@@ -1181,6 +1250,9 @@ impl ::protobuf::Message for GetCellsRequest {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.tableId)?;
+                },
+                2 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.rect)?;
                 },
                 _ => {
@@ -1195,6 +1267,9 @@ impl ::protobuf::Message for GetCellsRequest {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
+        if !self.tableId.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.tableId);
+        }
         if let Some(ref v) = self.rect.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
@@ -1205,8 +1280,11 @@ impl ::protobuf::Message for GetCellsRequest {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if !self.tableId.is_empty() {
+            os.write_string(1, &self.tableId)?;
+        }
         if let Some(ref v) = self.rect.as_ref() {
-            os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_tag(2, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         }
@@ -1248,6 +1326,11 @@ impl ::protobuf::Message for GetCellsRequest {
         static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "tableId",
+                |m: &GetCellsRequest| { &m.tableId },
+                |m: &mut GetCellsRequest| { &mut m.tableId },
+            ));
             fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Rect>>(
                 "rect",
                 |m: &GetCellsRequest| { &m.rect },
@@ -1269,6 +1352,7 @@ impl ::protobuf::Message for GetCellsRequest {
 
 impl ::protobuf::Clear for GetCellsRequest {
     fn clear(&mut self) {
+        self.tableId.clear();
         self.rect.clear();
         self.unknown_fields.clear();
     }
@@ -1461,16 +1545,17 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x01(\x05R\x03col\x12\x14\n\x05value\x18\x03\x20\x01(\tR\x05value\"e\n\
     \x04Cell\x12\x10\n\x03row\x18\x01\x20\x01(\x05R\x03row\x12\x10\n\x03col\
     \x18\x02\x20\x01(\x05R\x03col\x12\x14\n\x05value\x18\x03\x20\x01(\tR\x05\
-    value\x12#\n\rdisplay_value\x18\x04\x20\x01(\tR\x0cdisplayValue\"C\n\x12\
-    InsertCellsRequest\x12-\n\x05cells\x18\x01\x20\x03(\x0b2\x17.spreadsheet\
-    .InsertCellR\x05cells\">\n\x13InsertCellsResponse\x12'\n\x05cells\x18\
-    \x01\x20\x03(\x0b2\x11.spreadsheet.CellR\x05cells\"8\n\x0fGetCellsReques\
-    t\x12%\n\x04rect\x18\x01\x20\x01(\x0b2\x11.spreadsheet.RectR\x04rect\";\
-    \n\x10GetCellsResponse\x12'\n\x05cells\x18\x01\x20\x03(\x0b2\x11.spreads\
-    heet.CellR\x05cells2\xab\x01\n\x0eSpreadsheetAPI\x12P\n\x0bInsertCells\
-    \x12\x1f.spreadsheet.InsertCellsRequest\x1a\x20.spreadsheet.InsertCellsR\
-    esponse\x12G\n\x08GetCells\x12\x1c.spreadsheet.GetCellsRequest\x1a\x1d.s\
-    preadsheet.GetCellsResponseb\x06proto3\
+    value\x12#\n\rdisplay_value\x18\x04\x20\x01(\tR\x0cdisplayValue\"]\n\x12\
+    InsertCellsRequest\x12\x18\n\x07tableId\x18\x01\x20\x01(\tR\x07tableId\
+    \x12-\n\x05cells\x18\x02\x20\x03(\x0b2\x17.spreadsheet.InsertCellR\x05ce\
+    lls\">\n\x13InsertCellsResponse\x12'\n\x05cells\x18\x01\x20\x03(\x0b2\
+    \x11.spreadsheet.CellR\x05cells\"R\n\x0fGetCellsRequest\x12\x18\n\x07tab\
+    leId\x18\x01\x20\x01(\tR\x07tableId\x12%\n\x04rect\x18\x02\x20\x01(\x0b2\
+    \x11.spreadsheet.RectR\x04rect\";\n\x10GetCellsResponse\x12'\n\x05cells\
+    \x18\x01\x20\x03(\x0b2\x11.spreadsheet.CellR\x05cells2\xab\x01\n\x0eSpre\
+    adsheetAPI\x12P\n\x0bInsertCells\x12\x1f.spreadsheet.InsertCellsRequest\
+    \x1a\x20.spreadsheet.InsertCellsResponse\x12G\n\x08GetCells\x12\x1c.spre\
+    adsheet.GetCellsRequest\x1a\x1d.spreadsheet.GetCellsResponseb\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

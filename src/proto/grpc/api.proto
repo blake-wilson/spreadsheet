@@ -44,7 +44,8 @@ message Cell {
  * InsertCellsRequest is used to insert a list of cells into the Spreadsheet.
 */
 message InsertCellsRequest {
-    repeated InsertCell cells = 1;
+    string tableId = 1;
+    repeated InsertCell cells = 2;
 }
 
 /**
@@ -59,7 +60,8 @@ message InsertCellsResponse {
  * GetCellsRequest specifies a region to load cells from.
 */
 message GetCellsRequest {
-    Rect rect = 1;
+    string tableId = 1;
+    Rect rect = 2;
 }
 
 /**

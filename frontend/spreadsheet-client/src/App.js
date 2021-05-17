@@ -7,10 +7,11 @@ import {SpreadsheetAPIClient} from './api_grpc_web_pb.js';
 import {GetCellsRequest, InsertCell, InsertCellsRequest, InsertCellsResponse} from './api_pb.js';
 import React, {Component} from 'react';
 
-let hostname = "https://spreadsheet.yellowpapersun.net"
-// let hostname = 'http://localhost:8080';
+// let hostname = "https://spreadsheet.yellowpapersun.net"
+let hostname = 'http://localhost:8080';
 let apiClient = new SpreadsheetAPIClient(hostname,
                                null, null);
+const tableId = "test-table-id";
 
 class App extends React.Component {
 
@@ -40,6 +41,7 @@ class App extends React.Component {
 
       // get the initial cells values
       var request = new GetCellsRequest();
+      request.setTableid(tableId);
       var rect = new Rect();
       rect.setStartRow(0);
       rect.setStopRow(100);
@@ -76,6 +78,7 @@ class App extends React.Component {
     c1.setCol(col);
     c1.setValue(textContent);
     var request = new InsertCellsRequest();
+    request.setTableid(tableId);
     request.setCellsList([c1]);
     apiClient.insertCells(request, {}, (err, response) => {
     if (err) {
@@ -106,6 +109,7 @@ class App extends React.Component {
     c1.setCol(cell.col);
     c1.setValue(cell.value);
     var request = new InsertCellsRequest();
+    request.setTableid(tableId);
     request.setCellsList([c1]);
     apiClient.insertCells(request, {}, (err, response) => {
     if (err) {
