@@ -68,9 +68,7 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
         let cells: Vec<models::Cell>;
         {
             let cs = self.cells_service.lock().unwrap();
-            println!("get cells in rect {:?}", rect);
             cells = cs.get_cells(rect);
-            println!("got cells {:?}", cells);
         }
         let mut resp = api::GetCellsResponse::default();
         resp.set_cells(protobuf::RepeatedField::from_vec(model_cells_to_api(cells)));
@@ -84,16 +82,6 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
 }
 
 fn main() {
-    let tree = parser::parse("=CALL(10 * 3, CALLB(100, 200))");
-    println!("tree: {:?}", tree);
-    let c = models::Cell {
-        row: 10,
-        col: 30,
-        value: "10".to_string(),
-        display_value: "10".to_string(),
-    };
-    println!("cell: {:?}", c);
-
     let cells_service = service::MemoryCellsService::new(50, 26);
     let ss_service = SpreadsheetService {
         cells_service: Arc::new(Mutex::new(cells_service)),
