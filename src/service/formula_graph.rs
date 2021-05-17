@@ -132,9 +132,10 @@ impl FormulaGraph {
         }
     }
 
-    // insert_cell inserts the provided cell into the formula graph and returns the affected
-    // cell ranges. These cell ranges should be recomputed in the order they are returned.
-    // Cells later in the returned list may depend on cells evaluated earlier in the list.
+    // insert_cell inserts the provided cell into the formula graph
+    // and returns a stack of the affected cell ranges.
+    // These cell ranges should be recomputed by popping from this stack.
+    // Cells lower in the stack may depend on cells evaluated higher in it.
     pub fn insert_cell(
         &mut self,
         cell: models::Cell,
