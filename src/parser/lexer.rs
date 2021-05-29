@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::iter::Peekable;
 use std::vec::Vec;
 
@@ -19,8 +20,8 @@ pub struct Token {
     pub val: String,
 }
 
-pub fn lex(input: &str) -> Result<Vec<Token>, &'static str> {
-    let mut result = Vec::new();
+pub fn lex(input: &str) -> Result<VecDeque<Token>, &'static str> {
+    let mut result = VecDeque::new();
     let mut it = input.chars().peekable();
 
     println!("lexing: {}", input);
@@ -91,7 +92,7 @@ pub fn lex(input: &str) -> Result<Vec<Token>, &'static str> {
             _ => Err("unrecognized input"),
         };
         match t {
-            Ok(t) => result.push(t),
+            Ok(t) => result.push_back(t),
             Err(e) => return Err(e),
         }
     }

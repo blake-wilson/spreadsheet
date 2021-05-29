@@ -22,13 +22,13 @@ mod tests {
             display_value: "10".to_string(),
         };
         let mut to_eval = fg.insert_cell(b1.clone(), vec![]);
-        assert_eq!(Vec::<CellLocation>::new(), to_eval);
+        assert_eq!(Vec::<CellLocation>::new(), to_eval.inserted_cells);
 
         to_eval = fg.insert_cell(a1.clone(), vec![b1.to_range()]);
-        assert_eq!(Vec::<CellLocation>::new(), to_eval);
+        assert_eq!(Vec::<CellLocation>::new(), to_eval.inserted_cells);
 
         to_eval = fg.insert_cell(b1.clone(), vec![]);
-        assert_eq!(vec![a1.loc()], to_eval);
+        assert_eq!(vec![a1.loc()], to_eval.inserted_cells);
 
         // Add a third dependency, A1 --> B1 --> C1
         let c1 = Cell {
@@ -39,16 +39,68 @@ mod tests {
         };
 
         to_eval = fg.insert_cell(c1.clone(), vec![]);
-        assert_eq!(Vec::<CellLocation>::new(), to_eval);
+        assert_eq!(Vec::<CellLocation>::new(), to_eval.inserted_cells);
 
         // Add the dependency on cell C1. A1 should be recomputed
         to_eval = fg.insert_cell(b1.clone(), vec![c1.to_range()]);
-        assert_eq!(vec![a1.loc()], to_eval);
+        assert_eq!(vec![a1.loc()], to_eval.inserted_cells);
 
         // Modify C1. B1 and A1 should be recomputed in that order
         to_eval = fg.insert_cell(c1.clone(), vec![]);
-        assert_eq!(2, to_eval.len());
-        assert_eq!(b1.loc(), to_eval.pop().unwrap());
-        assert_eq!(a1.loc(), to_eval.pop().unwrap());
+        assert_eq!(vec![a1.loc(), b1.loc()], to_eval.inserted_cells);
+    }
+
+    #[test]
+    fn test_range_ref() {
+        let mut fg = FormulaGraph::new();
+
+        // Range dependency
+        // D1 --> A1:A2
+        let a1 = Cell {
+            row: 0,
+            col: 3,
+            value: "=SUM(A2:A3)".to_string(),
+            display_value: "0".to_string(),
+        };
+        let mut to_eval = fg.insert_cell(
+            a1.clone(),
+            vec![CellRange {
+                start_row: 0,
+                start_col: 0,
+                stop_row: 2,
+                stop_col: 0,
+            }],
+        );
+        assert_eq!(Vec::<CellLocation>::new(), to_eval.inserted_cells);
+
+        // Update the first cell in the range reference
+        let to_eval = fg.insert_cell(
+            Cell {
+                row: 0,
+                col: 0,
+                value: "".to_string(),
+                display_value: "".to_string(),
+            },
+            vec![],
+        );
+        assert_eq!(
+            vec![CellLocation { row: 0, col: 3 }],
+            to_eval.inserted_cells
+        );
+
+        // Update the second cell in the range reference
+        let to_eval = fg.insert_cell(
+            Cell {
+                row: 1,
+                col: 0,
+                value: "".to_string(),
+                display_value: "".to_string(),
+            },
+            vec![],
+        );
+        assert_eq!(
+            vec![CellLocation { row: 0, col: 3 }],
+            to_eval.inserted_cells
+        );
     }
 }

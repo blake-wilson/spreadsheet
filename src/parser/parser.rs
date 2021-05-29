@@ -3,6 +3,7 @@ use super::super::models::CellRange;
 use super::super::models::EvalContext;
 use super::functions::*;
 use super::lexer::*;
+use std::collections::VecDeque;
 
 #[derive(Debug, PartialEq)]
 pub enum Operator {
@@ -133,15 +134,21 @@ pub fn get_refs(n: &ASTNode) -> Vec<CellRange> {
             }
         }
         ASTNode::Ref(cell_ref) => refs.push(cell_ref.to_cell_range()),
-        ASTNode::Range { start, stop } => refs.push(CellRange {
-            start_row: start.row,
-            start_col: start.col,
-            stop_row: stop.row,
-            stop_col: stop.col,
-        }),
+        ASTNode::Range { start, stop } => {
+            let stop_range = stop.to_cell_range();
+            // We need to include the lower-right most bounds of the range,
+            // so get the range bounds of this corner.
+            refs.push(CellRange {
+                start_row: start.row,
+                start_col: start.col,
+                stop_row: stop_range.stop_row,
+                stop_col: stop_range.stop_col,
+            })
+        }
         _ => (),
     }
 
+    println!("refs are: {:?}", refs);
     refs
 }
 
@@ -228,11 +235,11 @@ fn evaluate_internal(
     }
 }
 
-pub fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+pub fn parse_internal(tokens: &mut VecDeque<Token>) -> Result<ASTNode, Error> {
     if tokens.len() == 0 {
         return Ok(ASTNode::Empty);
     }
-    let fst = tokens.remove(0);
+    let fst = tokens.pop_front().unwrap();
     match fst.kind {
         TokenKind::Number => parse_number(&fst, tokens),
         TokenKind::Text => Ok(ASTNode::Text(fst.val)),
@@ -248,7 +255,7 @@ pub fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
     }
 }
 
-pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+pub fn parse_number(curr: &Token, tokens: &mut VecDeque<Token>) -> Result<ASTNode, Error> {
     println!("parsing number: {:?} {:?}", curr, tokens);
     let num_node = ASTNode::Number(curr.val.parse::<f64>().unwrap());
     if tokens.len() == 0 {
@@ -261,12 +268,12 @@ pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Er
     }
 }
 
-pub fn parse_paren_expr(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+pub fn parse_paren_expr(tokens: &mut VecDeque<Token>) -> Result<ASTNode, Error> {
     let node = parse_internal(tokens)?;
     if tokens.len() == 0 {
         return Err(Error::new("unexpected end of paren expression"));
     }
-    let next = tokens.remove(0);
+    let next = tokens.pop_front().unwrap();
     if next.kind != TokenKind::RParen {
         return Err(Error::new("No matching ')' found for '('"));
     }
@@ -280,7 +287,11 @@ pub fn parse_paren_expr(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
     }
 }
 
-fn parse_binary_expr(lhs: ASTNode, op: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+fn parse_binary_expr(
+    lhs: ASTNode,
+    op: &Token,
+    tokens: &mut VecDeque<Token>,
+) -> Result<ASTNode, Error> {
     let val = op.val.clone();
     tokens.remove(0);
     let rhs = parse_internal(tokens)?;
@@ -291,7 +302,10 @@ fn parse_binary_expr(lhs: ASTNode, op: &Token, tokens: &mut Vec<Token>) -> Resul
     })
 }
 
-pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+pub fn parse_cell_ref_or_range(
+    curr: &Token,
+    tokens: &mut VecDeque<Token>,
+) -> Result<ASTNode, Error> {
     let mut start = parse_cell_ref(curr)?;
     let next = tokens.get(0);
 
@@ -319,7 +333,7 @@ pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<
     }
 }
 
-pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+pub fn parse_function(curr: &Token, tokens: &mut VecDeque<Token>) -> Result<ASTNode, Error> {
     let next = tokens.get(0).unwrap();
 
     if next.kind != TokenKind::LParen {
@@ -357,7 +371,7 @@ pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, 
     })
 }
 
-pub fn parse_function_argument(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+pub fn parse_function_argument(tokens: &mut VecDeque<Token>) -> Result<ASTNode, Error> {
     let arg = parse_internal(tokens)?;
     match tokens.get(0) {
         Some(token) => {

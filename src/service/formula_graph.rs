@@ -15,6 +15,7 @@ struct RTreeNode {
     points_to: models::CellRange,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct InsertResult {
     pub inserted_cells: Vec<models::CellLocation>,
     pub circular: bool,
@@ -102,8 +103,8 @@ impl PointDistance for RTreeNode {
                 col: self.points_to.start_col,
             },
             models::CellLocation {
-                row: self.points_to.stop_row,
-                col: self.points_to.stop_col,
+                row: self.points_to.stop_row - 1,
+                col: self.points_to.stop_col - 1,
             },
         );
         aabb.contains_point(point)
@@ -141,7 +142,10 @@ impl FormulaGraph {
         cell: models::Cell,
         dependencies: Vec<models::CellRange>,
     ) -> InsertResult {
-        println!("insert cell {:?}", cell);
+        println!(
+            "insert cell {:?} with dependencies {:?}\n",
+            cell, dependencies
+        );
 
         // Delete any existing dependencies this cell has marked
         for (_, deps) in &self.dependencies_map {
@@ -175,6 +179,7 @@ impl FormulaGraph {
             .insert(d);
 
             (*self.dependents_map.entry(d).or_insert(HashSet::new())).insert(cell.loc());
+            println!("dependents map is now {:?}", self.dependents_map.get(&d));
         }
 
         // Find all the dependents and update dependents map for the inserted cell
@@ -190,8 +195,13 @@ impl FormulaGraph {
                 .entry(cell.to_range().clone())
                 .or_insert(HashSet::new()))
             .insert(e.cell);
+            println!(
+                "dependents map is now {:?}",
+                self.dependents_map.get(&cell.to_range())
+            );
         }
 
+        println!("cells to eval for cell: {:?}\n", cell);
         self.cells_to_eval(&cell)
     }
 
@@ -209,6 +219,7 @@ impl FormulaGraph {
             &mut circular,
         );
         let mut ret = vec![];
+        println!("stack {:?}", stack);
         for s in stack.iter() {
             ret.push(models::CellLocation {
                 row: s.row,
@@ -261,5 +272,6 @@ impl FormulaGraph {
             }
             None => {}
         }
+        println!("returning\n\n");
     }
 }

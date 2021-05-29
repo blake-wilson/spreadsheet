@@ -2,10 +2,11 @@
 mod tests {
     pub use super::super::lexer::*;
     pub use super::super::parser::*;
+    use std::collections::VecDeque;
 
     #[test]
-    fn test_parse_number() {
-        let tokens = lex(&"30".to_string());
+    fn test_parse_number() -> Result<(), &'static str> {
+        let tokens = lex(&"30".to_string())?;
 
         assert_eq!(1, tokens.len());
         assert_eq!(
@@ -16,7 +17,7 @@ mod tests {
             tokens.get(0).unwrap()
         );
 
-        let tokens = lex(&"30 40 50".to_string());
+        let tokens = lex(&"30 40 50".to_string())?;
         assert_eq!(3, tokens.len());
 
         assert_eq!(
@@ -40,11 +41,12 @@ mod tests {
             },
             tokens.get(2).unwrap()
         );
+        Ok(())
     }
 
     #[test]
-    fn test_parse_id() {
-        let tokens = lex(&"this_id".to_string());
+    fn test_lex_id() -> Result<(), &'static str> {
+        let tokens = lex(&"this_id".to_string())?;
 
         assert_eq!(1, tokens.len());
         assert_eq!(
@@ -54,11 +56,12 @@ mod tests {
             },
             tokens.get(0).unwrap()
         );
+        Ok(())
     }
 
     #[test]
-    fn test_parse() {
-        let tokens = &mut vec![
+    fn test_parse() -> Result<(), Error> {
+        let tokens = &mut VecDeque::from(vec![
             Token {
                 kind: TokenKind::Number,
                 val: "30".to_string(),
@@ -71,8 +74,8 @@ mod tests {
                 kind: TokenKind::Number,
                 val: "40".to_string(),
             },
-        ];
-        let node = parse_internal(tokens).unwrap();
+        ]);
+        let node = parse_internal(tokens)?;
 
         assert_eq!(
             node,
@@ -81,12 +84,13 @@ mod tests {
                 lhs: Box::new(ASTNode::Number(30f64)),
                 rhs: Box::new(ASTNode::Number(40f64)),
             }
-        )
+        );
+        Ok(())
     }
 
     #[test]
-    fn test_parse_function() {
-        let tokens = &mut vec![
+    fn test_parse_function() -> Result<(), Error> {
+        let tokens = &mut VecDeque::from(vec![
             Token {
                 kind: TokenKind::ID,
                 val: "ABC".to_string(),
@@ -119,8 +123,8 @@ mod tests {
                 kind: TokenKind::RParen,
                 val: ")".to_string(),
             },
-        ];
-        let node = parse_internal(tokens).unwrap();
+        ]);
+        let node = parse_internal(tokens)?;
 
         assert_eq!(
             node,
@@ -135,16 +139,18 @@ mod tests {
                     Box::new(ASTNode::Number(60f64)),
                 ],
             }
-        )
+        );
+        Ok(())
     }
 
     #[test]
-    fn test_parse_cell_ref() {
-        let tokens = &mut vec![Token {
+    fn test_parse_cell_ref() -> Result<(), Error> {
+        let tokens = &mut VecDeque::from(vec![Token {
             kind: TokenKind::ID,
             val: "B1".to_string(),
-        }];
-        let node = parse_internal(tokens).unwrap();
+        }]);
+        let node = parse_internal(tokens)?;
         assert_eq!(node, ASTNode::Ref(CellRef { col: 1, row: 0 }));
+        Ok(())
     }
 }
