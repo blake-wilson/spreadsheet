@@ -39,6 +39,7 @@ pub struct CellRange {
 impl CellRange {
     pub fn clamp(&mut self, max_rows: i32) {
         if self.stop_row != -1 {
+            self.stop_row = self.stop_row.clamp(0, max_rows);
             return;
         }
         self.stop_row = max_rows

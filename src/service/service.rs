@@ -62,7 +62,7 @@ impl CellsService for MemoryCellsService {
 
             // Update the formula graph and recompute necessary cells
             let formula = parser::parse(&cc.value)?;
-            let mut refs = parser::get_refs(&formula);
+            let mut refs = parser::get_refs(&formula, self as &dyn EvalContext);
             refs.iter_mut().for_each(|r| (*r).clamp(self.num_rows));
             let mut insert_res = self.formula_graph.insert_cell(cc.clone(), refs);
             if !insert_res.circular {

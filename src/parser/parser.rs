@@ -43,6 +43,14 @@ impl CellRef {
     }
 
     fn to_cell_range(&self) -> CellRange {
+        if self.is_unbounded() {
+            return CellRange {
+                start_row: 0,
+                start_col: self.col,
+                stop_row: -1,
+                stop_col: self.col + 1,
+            };
+        }
         CellRange {
             start_row: self.row,
             start_col: self.col,
@@ -120,22 +128,23 @@ pub fn evaluate(n: ASTNode, ctx: &dyn EvalContext) -> String {
     }
 }
 
-pub fn get_refs(n: &ASTNode) -> Vec<CellRange> {
+pub fn get_refs(n: &ASTNode, ctx: &dyn EvalContext) -> Vec<CellRange> {
     let mut refs = vec![];
 
     match n {
         ASTNode::BinaryExpr { op: _, lhs, rhs } => {
-            refs.extend(get_refs(lhs));
-            refs.extend(get_refs(rhs));
+            refs.extend(get_refs(lhs, ctx));
+            refs.extend(get_refs(rhs, ctx));
         }
         ASTNode::Function { name: _, args } => {
             for arg in args {
-                refs.extend(get_refs(arg))
+                refs.extend(get_refs(arg, ctx))
             }
         }
         ASTNode::Ref(cell_ref) => refs.push(cell_ref.to_cell_range()),
         ASTNode::Range { start, stop } => {
-            let stop_range = stop.to_cell_range();
+            let mut stop_range = stop.to_cell_range();
+            stop_range.clamp(ctx.num_rows());
             // We need to include the lower-right most bounds of the range,
             // so get the range bounds of this corner.
             refs.push(CellRange {
@@ -244,7 +253,7 @@ pub fn parse_internal(tokens: &mut VecDeque<Token>) -> Result<ASTNode, Error> {
         TokenKind::Number => parse_number(&fst, tokens),
         TokenKind::Text => Ok(ASTNode::Text(fst.val)),
         TokenKind::LParen => parse_paren_expr(tokens),
-        TokenKind::ID => match tokens.get(0) {
+        TokenKind::ID => match tokens.front() {
             Some(token) => match token.kind {
                 TokenKind::LParen => parse_function(&fst, tokens),
                 _ => parse_cell_ref_or_range(&fst, tokens),
@@ -256,12 +265,11 @@ pub fn parse_internal(tokens: &mut VecDeque<Token>) -> Result<ASTNode, Error> {
 }
 
 pub fn parse_number(curr: &Token, tokens: &mut VecDeque<Token>) -> Result<ASTNode, Error> {
-    println!("parsing number: {:?} {:?}", curr, tokens);
     let num_node = ASTNode::Number(curr.val.parse::<f64>().unwrap());
     if tokens.len() == 0 {
         return Ok(num_node);
     }
-    let next = tokens.get(0).unwrap().clone();
+    let next = tokens.front().unwrap().clone();
     match next.kind {
         TokenKind::BinaryExpr => return parse_binary_expr(num_node, &next, tokens),
         _ => Ok(num_node),
@@ -280,7 +288,7 @@ pub fn parse_paren_expr(tokens: &mut VecDeque<Token>) -> Result<ASTNode, Error> 
     if tokens.len() == 0 {
         return Ok(node);
     }
-    let next = tokens.get(0).unwrap().clone();
+    let next = tokens.front().unwrap().clone();
     match next.kind {
         TokenKind::BinaryExpr => parse_binary_expr(node, &next, tokens),
         _ => Ok(node),
@@ -293,7 +301,7 @@ fn parse_binary_expr(
     tokens: &mut VecDeque<Token>,
 ) -> Result<ASTNode, Error> {
     let val = op.val.clone();
-    tokens.remove(0);
+    tokens.pop_front().unwrap();
     let rhs = parse_internal(tokens)?;
     Ok(ASTNode::BinaryExpr {
         op: get_operator(&val)?,
@@ -307,14 +315,14 @@ pub fn parse_cell_ref_or_range(
     tokens: &mut VecDeque<Token>,
 ) -> Result<ASTNode, Error> {
     let mut start = parse_cell_ref(curr)?;
-    let next = tokens.get(0);
+    let next = tokens.front();
 
     let cell_ref = match next {
         Some(t) => match t.kind {
             TokenKind::Colon => {
-                tokens.remove(0);
-                let stop = parse_cell_ref(tokens.get(0).unwrap())?;
-                tokens.remove(0);
+                tokens.pop_front();
+                let stop = parse_cell_ref(tokens.front().unwrap())?;
+                tokens.pop_front();
                 start.row = 0;
                 ASTNode::Range { start, stop }
             }
@@ -326,7 +334,7 @@ pub fn parse_cell_ref_or_range(
     if tokens.len() == 0 {
         return Ok(cell_ref);
     }
-    let next = tokens.get(0).unwrap().clone();
+    let next = tokens.front().unwrap().clone();
     match next.kind {
         TokenKind::BinaryExpr => return parse_binary_expr(cell_ref, &next, tokens),
         _ => Ok(cell_ref),
@@ -334,7 +342,7 @@ pub fn parse_cell_ref_or_range(
 }
 
 pub fn parse_function(curr: &Token, tokens: &mut VecDeque<Token>) -> Result<ASTNode, Error> {
-    let next = tokens.get(0).unwrap();
+    let next = tokens.front().unwrap();
 
     if next.kind != TokenKind::LParen {
         return Err(Error::new(&format!(
@@ -342,38 +350,46 @@ pub fn parse_function(curr: &Token, tokens: &mut VecDeque<Token>) -> Result<ASTN
             next.kind
         )));
     }
-    tokens.remove(0);
+    tokens.pop_front();
 
     let mut args = Vec::new();
     loop {
         args.push(Box::new(parse_function_argument(tokens)?));
-        if tokens.get(0).is_none() {
+        if tokens.front().is_none() {
             return Err(Error::new(
                 "Unexpected end of input after function argument",
             ));
         }
-        let next = tokens.get(0).unwrap();
+        let next = tokens.front().unwrap();
         if next.kind != TokenKind::Comma {
             break;
         }
-        tokens.remove(0);
+        tokens.pop_front();
     }
-    if tokens.get(0).is_none() || tokens.get(0).unwrap().kind != TokenKind::RParen {
+    if tokens.front().is_none() || tokens.front().unwrap().kind != TokenKind::RParen {
         return Err(Error::new(&format!(
             "No closing parentheses in function arguments",
         )));
     }
-    tokens.remove(0);
+    tokens.pop_front();
 
-    Ok(ASTNode::Function {
+    let func_node = ASTNode::Function {
         name: curr.val.clone(),
         args,
-    })
+    };
+    if tokens.len() == 0 {
+        return Ok(func_node);
+    }
+    let next = tokens.front().unwrap().clone();
+    match next.kind {
+        TokenKind::BinaryExpr => return parse_binary_expr(func_node, &next, tokens),
+        _ => Ok(func_node),
+    }
 }
 
 pub fn parse_function_argument(tokens: &mut VecDeque<Token>) -> Result<ASTNode, Error> {
     let arg = parse_internal(tokens)?;
-    match tokens.get(0) {
+    match tokens.front() {
         Some(token) => {
             if token.kind != TokenKind::RParen && token.kind != TokenKind::Comma {
                 return Err(Error::new(
