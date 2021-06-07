@@ -65,4 +65,13 @@ impl Cell {
             stop_col: self.col + 1,
         }
     }
+
+    pub fn empty() -> Cell {
+        Cell {
+            row: 0,
+            col: 0,
+            value: "".to_string(),
+            display_value: "".to_string(),
+        }
+    }
 }

@@ -25,11 +25,7 @@ pub struct MemoryCellsService {
 
 impl EvalContext for MemoryCellsService {
     fn get_cell(&self, row: i32, col: i32) -> Option<models::Cell> {
-        let c = self.get_cell(row, col);
-        match c.value.as_ref() {
-            "" => None,
-            _ => Some(c),
-        }
+        self.get_cell(row, col)
     }
 
     fn get_cells(&self, rect: models::Rect) -> Vec<models::Cell> {
@@ -58,7 +54,7 @@ impl CellsService for MemoryCellsService {
 
         // Recalculate after inserting values for all cells
         for c in cells {
-            let mut cc = self.get_cell(c.row, c.col);
+            let mut cc = self.get_cell(c.row, c.col).unwrap();
 
             // Update the formula graph and recompute necessary cells
             let formula = parser::parse(&cc.value)?;
@@ -69,7 +65,7 @@ impl CellsService for MemoryCellsService {
                 while let Some(c) = insert_res.inserted_cells.pop() {
                     // We don't need to check refs again here since the formula graph already computed
                     // all the required re-evals.
-                    let mut eval_cell = self.get_cell(c.row, c.col).clone();
+                    let mut eval_cell = self.get_cell(c.row, c.col).unwrap().clone();
                     let formula = parser::parse(&eval_cell.value)?;
                     let display_value = parser::evaluate(formula, self);
                     eval_cell.display_value = display_value;
@@ -86,7 +82,7 @@ impl CellsService for MemoryCellsService {
                 while let Some(c) = insert_res.inserted_cells.pop() {
                     println!("circular cell\n");
                     let display_value = "#CIRCULAR!".to_owned();
-                    let mut eval_cell = self.get_cell(c.row, c.col).clone();
+                    let mut eval_cell = self.get_cell(c.row, c.col).unwrap().clone();
                     eval_cell.display_value = display_value;
                     self.set_cell(&eval_cell);
                     ret_cells.push(eval_cell);
@@ -101,7 +97,7 @@ impl CellsService for MemoryCellsService {
         let clamped = r.clamp(self.num_rows, self.num_cols);
         for row in clamped.start_row..clamped.stop_row {
             for col in clamped.start_col..clamped.stop_col {
-                let c = (self as &dyn EvalContext).get_cell(row, col);
+                let c = self.get_cell(row, col);
                 if !c.is_none() {
                     result_cells.push(c.unwrap().clone());
                 }
@@ -116,22 +112,17 @@ impl MemoryCellsService {
         MemoryCellsService {
             num_cols,
             num_rows,
-            data: vec![
-                models::Cell {
-                    row: 0,
-                    col: 0,
-                    value: "".to_string(),
-                    display_value: "".to_string(),
-                };
-                (num_cols * num_rows) as usize
-            ],
+            data: vec![models::Cell::empty(); (num_cols * num_rows) as usize],
             formula_graph: FormulaGraph::new(),
         }
     }
-    pub fn get_cell(&self, row: i32, col: i32) -> models::Cell {
-        self.data[row_major_idx(row, col, self.num_cols) as usize].clone()
+    pub fn get_cell(&self, row: i32, col: i32) -> Option<models::Cell> {
+        let c = self.data[row_major_idx(row, col, self.num_cols) as usize].clone();
+        match c.value.as_ref() {
+            "" => None,
+            _ => Some(c),
+        }
     }
-
     pub fn set_cell(&mut self, cell: &models::Cell) {
         self.data[row_major_idx(cell.row, cell.col, self.num_cols) as usize] = cell.clone();
     }
