@@ -147,10 +147,7 @@ impl FormulaGraph {
             cell, dependencies
         );
 
-        // Delete any existing dependencies this cell has marked
-        // For each dependency:
-        // 1) Mark the dependency and insert an RTree node containing the dependency's boundaries.
-        // 2) Mark the inserted cell as a dependent of the dependency
+        // For each dependency insert an RTree node containing the dependency's boundaries.
         for d in dependencies {
             let to_insert = RTreeNode {
                 cell: cell.loc(),
