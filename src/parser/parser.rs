@@ -295,19 +295,31 @@ pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<
     let mut start = parse_cell_ref(curr)?;
     let next = tokens.get(0);
 
-    let cell_ref = match next {
+    let stop = match next {
         Some(t) => match t.kind {
             TokenKind::Colon => {
                 tokens.remove(0);
                 let stop = parse_cell_ref(tokens.get(0).unwrap())?;
                 tokens.remove(0);
                 start.row = 0;
-                ASTNode::Range { start, stop }
+                Some(stop)
             }
-            _ => ASTNode::Ref(start),
+            _ => None,
         },
-        None => ASTNode::Ref(start),
+        _ => None,
     };
+    let cell_ref = match stop {
+        Some(s) => Ok(ASTNode::Range { start, stop: s }),
+        None => {
+            if !start.is_unbounded() {
+                Ok(ASTNode::Ref(start))
+            } else {
+                Err(Error::new(&format!(
+                    "cannot use unbounded reference without end column"
+                )))
+            }
+        }
+    }?;
 
     if tokens.len() == 0 {
         return Ok(cell_ref);
