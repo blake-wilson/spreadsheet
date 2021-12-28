@@ -51,5 +51,7 @@ static_resources:
             - endpoint:
                 address:
                   socket_address:
+                    # Uncomment if using dockerized service with docker-compose
+                    # address: spreadsheet
                     address: "0.0.0.0"
                     port_value: 9090
