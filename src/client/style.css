@@ -1,8 +1,11 @@
 gridview child {
-    margin: 2px;
-    border: 2px solid black;
     max-width: 100px;
     max-height: 20px;
+}
+
+.ss_entry {
+    padding: 2px;
+    margin: 0px;
 }
 
 .ss_entry:focus-within {

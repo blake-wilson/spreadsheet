@@ -128,12 +128,15 @@ fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
         let entry = Entry::builder()
             .max_width_chars(8)
             .width_chars(8)
-            // .height_request(20)
+            .css_classes(vec![GString::from_string_unchecked(String::from(
+                "ss_entry",
+            ))])
             .build();
-        list_item
+        let list_ref = list_item
             .downcast_ref::<ListItem>()
-            .expect("Needs to be ListItem")
-            .set_child(Some(&entry));
+            .expect("Needs to be ListItem");
+        list_ref.set_selectable(false);
+        list_ref.set_child(Some(&entry));
     });
 
     factory.connect_bind(clone!(@weak formula_bar => move |_, list_item| {
@@ -161,8 +164,8 @@ fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
         }));
         entry.connect_has_focus_notify(clone!(@weak formula_bar, @weak entry =>
             move |_| {
-            entry.set_css_classes(&[&String::from("ss_entry_focused")]);
-                formula_bar.set_text(&entry.text());
+            // entry.set_css_classes(&[&String::from("ss_entry_focused")]);
+            formula_bar.set_text(&entry.text());
         }));
 
         entry.set_text(&number.to_string());
