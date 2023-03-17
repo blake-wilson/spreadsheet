@@ -1,0 +1,22 @@
+gridview child {
+    margin: 2px;
+    border: 2px solid black;
+    max-width: 100px;
+    max-height: 20px;
+}
+
+.ss_entry:focus-within {
+    border: 2px solid green;
+}
+
+.ss_entry_focused {
+    border: 2px solid green;
+}
+
+.ss_entry:selected {
+    background-color: black;
+    border: 2px solid green;
+}
+
+
+GtkLabel { background-color: #AAAAAA;}
