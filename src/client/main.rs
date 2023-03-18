@@ -10,8 +10,8 @@ use gtk::glib;
 use gtk::prelude::BoxExt;
 use gtk::prelude::*;
 use gtk::{
-    Application, ApplicationWindow, Button, Entry, ListItem, ScrolledWindow, SignalListItemFactory,
-    SingleSelection,
+    Application, ApplicationWindow, Button, Entry, EventController, EventControllerKey, Inhibit,
+    ListItem, PropagationPhase, ScrolledWindow, SignalListItemFactory, SingleSelection,
 };
 use ss_cell::IntegerObject;
 use std::cell::Cell;
@@ -45,6 +45,8 @@ fn build_ui(application: &Application) {
         .margin_start(12)
         .margin_end(12)
         .build();
+
+    let mut selected_cell = (0, 0);
 
     // A mutable integer
     let number = Rc::new(Cell::new(0));
@@ -110,7 +112,20 @@ fn build_ui(application: &Application) {
         .build();
 
     // Present the window
+    let key_controller = EventControllerKey::builder().build();
     window.present();
+    key_controller.connect_key_pressed(
+        //clone!(@weak selection_model => @default-return Inhibit(false), move |_, key, key_code, _| {
+        move |_, key, key_code, _| -> Inhibit {
+            // selection_model.select_item(selection_model.selected() + 1, true);
+            println!("key {} was clicked!", key_code);
+            Inhibit(false)
+            //}),
+        },
+    );
+    key_controller.set_propagation_phase(PropagationPhase::Capture);
+    window.add_controller(key_controller);
+    formula_bar.grab_focus();
 }
 
 fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
@@ -135,7 +150,7 @@ fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
         let list_ref = list_item
             .downcast_ref::<ListItem>()
             .expect("Needs to be ListItem");
-        list_ref.set_selectable(false);
+        list_ref.set_activatable(false);
         list_ref.set_child(Some(&entry));
     });
 
@@ -162,6 +177,11 @@ fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
             move |_| {
                 formula_bar.set_text(&entry.text());
         }));
+        entry.connect_activate(clone!(@weak entry =>
+            move |_| {
+                println!("submitting formula {}", entry.text());
+            }
+        ));
         entry.connect_has_focus_notify(clone!(@weak formula_bar, @weak entry =>
             move |_| {
             // entry.set_css_classes(&[&String::from("ss_entry_focused")]);
@@ -179,6 +199,15 @@ fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
         .max_columns(20)
         .min_columns(20)
         .build();
+
+    let key_controller = EventControllerKey::builder().build();
+    key_controller.connect_key_pressed(
+        clone!(@weak selection_model => @default-return Inhibit(false), move |_, _, _, _| {
+            selection_model.select_item(selection_model.selected() + 1, true);
+            Inhibit(false)
+        }),
+    );
+    grid.add_controller(key_controller);
 
     // let cell_width = 1;
     // let cell_height = 1;
