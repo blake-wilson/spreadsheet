@@ -112,19 +112,19 @@ fn build_ui(application: &Application) {
         .build();
 
     // Present the window
-    let key_controller = EventControllerKey::builder().build();
+    // let key_controller = EventControllerKey::builder().build();
     window.present();
-    key_controller.connect_key_pressed(
-        //clone!(@weak selection_model => @default-return Inhibit(false), move |_, key, key_code, _| {
-        move |_, key, key_code, _| -> Inhibit {
-            // selection_model.select_item(selection_model.selected() + 1, true);
-            println!("key {} was clicked!", key_code);
-            Inhibit(false)
-            //}),
-        },
-    );
-    key_controller.set_propagation_phase(PropagationPhase::Capture);
-    window.add_controller(key_controller);
+    // key_controller.connect_key_pressed(
+    //     //clone!(@weak selection_model => @default-return Inhibit(false), move |_, key, key_code, _| {
+    //     move |_, key, key_code, _| -> Inhibit {
+    //         // selection_model.select_item(selection_model.selected() + 1, true);
+    //         println!("key {} was clicked!", key_code);
+    //         Inhibit(false)
+    //         //}),
+    //     },
+    // );
+    // key_controller.set_propagation_phase(PropagationPhase::Capture);
+    // window.add_controller(key_controller);
     formula_bar.grab_focus();
 }
 
@@ -201,10 +201,15 @@ fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
         .build();
 
     let key_controller = EventControllerKey::builder().build();
+    key_controller.set_propagation_phase(PropagationPhase::Capture);
     key_controller.connect_key_pressed(
-        clone!(@weak selection_model => @default-return Inhibit(false), move |_, _, _, _| {
+        clone!(@weak selection_model => @default-return Inhibit(false), move |_, _, key_code, _| {
+        if (key_code == 123) { // left arrow
+            selection_model.select_item(selection_model.selected() - 1, true);
+        } else if (key_code == 124) {
             selection_model.select_item(selection_model.selected() + 1, true);
-            Inhibit(false)
+        }
+        Inhibit(false)
         }),
     );
     grid.add_controller(key_controller);
