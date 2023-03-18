@@ -15,7 +15,11 @@ use gtk::{
 };
 use ss_cell::IntegerObject;
 use std::cell::Cell;
+use std::cmp::{max, min};
 use std::rc::Rc;
+
+const NUM_COLS: i32 = 20;
+const NUM_ROWS: i32 = 10;
 
 // When the application is launched…
 fn on_activate(application: &gtk::Application) {
@@ -97,7 +101,7 @@ fn build_ui(application: &Application) {
     let scrolled_window = ScrolledWindow::builder()
         //.hscrollbar_policy(gtk::PolicyType::Never) // Disable horizontal scrolling
         .min_content_width(360)
-        .min_content_height(300)
+        .min_content_height(600)
         .child(&grid)
         .build();
     gtk_box.append(&scrolled_window);
@@ -107,7 +111,7 @@ fn build_ui(application: &Application) {
         .application(application)
         .title("My GTK App")
         .default_width(1200)
-        .default_height(800)
+        .default_height(650)
         .child(&gtk_box)
         .build();
 
@@ -129,7 +133,10 @@ fn build_ui(application: &Application) {
 }
 
 fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
-    let vector: Vec<IntegerObject> = (0..=100).into_iter().map(IntegerObject::new).collect();
+    let vector: Vec<IntegerObject> = (0..=(NUM_ROWS * NUM_COLS) as i32)
+        .into_iter()
+        .map(IntegerObject::new)
+        .collect();
     // Create new model
     let model = gio::ListStore::new(IntegerObject::static_type());
     // Add the vector to the model
@@ -150,11 +157,12 @@ fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
         let list_ref = list_item
             .downcast_ref::<ListItem>()
             .expect("Needs to be ListItem");
-        list_ref.set_activatable(false);
+        list_ref.set_activatable(true);
         list_ref.set_child(Some(&entry));
     });
 
-    factory.connect_bind(clone!(@weak formula_bar => move |_, list_item| {
+    let selection_model = SingleSelection::new(Some(model));
+    factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
         // Get `IntegerObject` from `ListItem`
         let integer_object = list_item
             .downcast_ref::<ListItem>()
@@ -182,34 +190,48 @@ fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
                 println!("submitting formula {}", entry.text());
             }
         ));
-        entry.connect_has_focus_notify(clone!(@weak formula_bar, @weak entry =>
+        entry.connect_has_focus_notify(clone!(@weak formula_bar, @weak entry, @weak selection_model =>
             move |_| {
             // entry.set_css_classes(&[&String::from("ss_entry_focused")]);
             formula_bar.set_text(&entry.text());
+            selection_model.select_item(number as u32, true);
         }));
 
         entry.set_text(&number.to_string());
     }));
 
-    let selection_model = SingleSelection::new(Some(model));
     let grid = gtk::GridView::builder()
         .enable_rubberband(true)
         .factory(&factory)
         .model(&selection_model)
-        .max_columns(20)
-        .min_columns(20)
+        .max_columns(NUM_COLS as u32)
+        .min_columns(NUM_COLS as u32)
         .build();
 
     let key_controller = EventControllerKey::builder().build();
     key_controller.set_propagation_phase(PropagationPhase::Capture);
     key_controller.connect_key_pressed(
         clone!(@weak selection_model => @default-return Inhibit(false), move |_, _, key_code, _| {
-        if (key_code == 123) { // left arrow
-            selection_model.select_item(selection_model.selected() - 1, true);
-        } else if (key_code == 124) {
-            selection_model.select_item(selection_model.selected() + 1, true);
-        }
-        Inhibit(false)
+            println!("current selection is {}", selection_model.selected());
+            println!("current selected item is {:?}", selection_model.selected_item());
+            let mut inhibit = true;
+            // if key_code >= 123 && key_code <= 126 {
+            //     selection_model.selected_item().unwrap().downcast_ref::<gtk::Widget>()
+            //         .expect("Needs to be a Widget").grab_focus();
+            // }
+            if key_code == 123 { // left arrow
+                selection_model.select_item(clamp_selection(selection_model.selected() as i32 - 1) as u32, true);
+            } else if key_code == 124 { // left arrow
+                selection_model.select_item(clamp_selection(selection_model.selected() as i32 + 1) as u32, true);
+            } else if key_code == 125 { // down arrow
+                selection_model.select_item(clamp_selection(selection_model.selected() as i32 + NUM_COLS) as u32, true);
+            } else if key_code == 126 { // up arrow
+                selection_model.select_item(clamp_selection(selection_model.selected() as i32 - NUM_COLS) as u32, true);
+            } else {
+                inhibit = false;
+            }
+            println!("key code is {}", key_code);
+            Inhibit(inhibit)
         }),
     );
     grid.add_controller(key_controller);
@@ -257,6 +279,10 @@ fn load_css() {
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
+}
+
+fn clamp_selection(val: i32) -> i32 {
+    min(max(val, 0), NUM_ROWS * NUM_COLS)
 }
 
 fn main() {
