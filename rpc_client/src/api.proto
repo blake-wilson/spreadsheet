@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package spreadsheet;
+
+service SpreadsheetAPI {
+    rpc InsertCells(InsertCellsRequest) returns (InsertCellsResponse);
+    rpc GetCells(GetCellsRequest) returns (GetCellsResponse);
+}
+
+/**
+ * Rect is defined by its corners. Rects can be used for queries to specify
+ * the boundaries of interest.
+*/
+message Rect {
+    int32 start_row = 1;
+    int32 start_col = 2;
+    int32 stop_row = 3;
+    int32 stop_col = 4;
+}
+
+/**
+ * InsertCell defines a cell to be inserted into a Spreadsheet
+*/
+message InsertCell {
+    int32 row = 1;
+    int32 col = 2;
+    string value = 3;
+}
+
+/**
+ * Cell defines a Spreadsheet cell, complete with its computed (display) value.
+*/
+message Cell {
+    int32 row = 1;
+    int32 col = 2;
+    string value = 3;
+    // display value is distinguished from value in that it is computed by the
+    // Spreadsheet application using the formula (if defined) in the Cell's
+    // value.
+    string display_value = 4;
+}
+
+/**
+ * InsertCellsRequest is used to insert a list of cells into the Spreadsheet.
+*/
+message InsertCellsRequest {
+    string tableId = 1;
+    repeated InsertCell cells = 2;
+}
+
+/**
+ * InsertCellsResponse contains the cells which were inserted into the
+ * Spreadsheet.
+*/
+message InsertCellsResponse {
+    repeated Cell cells = 1;
+}
+
+/**
+ * GetCellsRequest specifies a region to load cells from.
+*/
+message GetCellsRequest {
+    string tableId = 1;
+    Rect rect = 2;
+}
+
+/**
+ * GetCellsResponse contains a list of cells located in the requested region.
+*/
+message GetCellsResponse {
+    repeated Cell cells = 1;
+}

@@ -6,6 +6,7 @@ use glib::GString;
 use glib::Object;
 use glib::StrV;
 use glib_macros::clone;
+use grpcio::ChannelBuilder;
 use gtk::glib;
 use gtk::prelude::BoxExt;
 use gtk::prelude::*;
@@ -13,10 +14,13 @@ use gtk::{
     Application, ApplicationWindow, Button, Entry, EventController, EventControllerKey, Inhibit,
     ListItem, PropagationPhase, ScrolledWindow, SignalListItemFactory, SingleSelection,
 };
+use rpc_client::api::Rect;
+use rpc_client::api_grpc::SpreadsheetApiClient;
 use ss_cell::IntegerObject;
 use std::cell::Cell;
 use std::cmp::{max, min};
 use std::rc::Rc;
+use std::sync::Arc;
 
 const NUM_COLS: i32 = 20;
 const NUM_ROWS: i32 = 10;
@@ -286,6 +290,10 @@ fn clamp_selection(val: i32) -> i32 {
 }
 
 fn main() {
+    let grpc_env = Arc::new(grpcio::Environment::new(1));
+    let api_client =
+        SpreadsheetApiClient::new(ChannelBuilder::new(grpc_env).connect(&String::from(":9001")));
+
     // Create a new application with the builder pattern
     let app = gtk::Application::builder()
         .application_id("com.github.gtk-rs.examples.basic")

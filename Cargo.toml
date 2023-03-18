@@ -7,8 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-grpcio-sys = { version = "0.8.1" }
-grpcio = {  version = "0.8.2", features = ["openssl", "protobuf-codec"], default-features = false }
+grpcio-sys = { version = "0.12.1" }
+grpcio = {  version = "0.12.1", features = ["openssl", "protobuf-codec"], default-features = false }
 futures = "0.3.14"
 protobuf = { version = "2.22.1" }
 log = "0.4"
@@ -23,6 +23,7 @@ gtk = {version = "*", package = "gtk4", features = ["v4_8"]}
 gdk4 = "0.6.2"
 gio = "0.17.3"
 glib-macros = "0.17.3"
+rpc_client = { path = "rpc_client" }
 
 [build-dependencies]
 protoc-grpcio = "3.0.0"
