@@ -14,7 +14,8 @@ use gtk::{
     Application, ApplicationWindow, Button, Entry, EventController, EventControllerKey, Inhibit,
     ListItem, PropagationPhase, ScrolledWindow, SignalListItemFactory, SingleSelection,
 };
-use rpc_client::api::Rect;
+use protobuf::RepeatedField;
+use rpc_client::api::*;
 use rpc_client::api_grpc::SpreadsheetApiClient;
 use ss_cell::IntegerObject;
 use std::cell::Cell;
@@ -38,6 +39,11 @@ fn on_activate(application: &gtk::Application) {
 }
 
 fn build_ui(application: &Application) {
+    let grpc_env = Arc::new(grpcio::Environment::new(1));
+    let api_client = Arc::new(SpreadsheetApiClient::new(
+        ChannelBuilder::new(grpc_env).connect(&String::from(":9001")),
+    ));
+
     // Create two buttons
     let button_increase = Button::builder()
         .label("Increase")
@@ -82,7 +88,7 @@ fn build_ui(application: &Application) {
         .width_chars(100)
         .max_width_chars(100)
         .build();
-    let grid = build_grid(&formula_bar);
+    let grid = build_grid(&formula_bar, api_client);
     grid.set_size_request(800, 600);
 
     // let layout_grid = gtk::Grid::builder()
@@ -136,7 +142,7 @@ fn build_ui(application: &Application) {
     formula_bar.grab_focus();
 }
 
-fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
+fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -> gtk::GridView {
     let vector: Vec<IntegerObject> = (0..=(NUM_ROWS * NUM_COLS) as i32)
         .into_iter()
         .map(IntegerObject::new)
@@ -161,12 +167,12 @@ fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
         let list_ref = list_item
             .downcast_ref::<ListItem>()
             .expect("Needs to be ListItem");
-        list_ref.set_activatable(true);
+        list_ref.set_activatable(false);
         list_ref.set_child(Some(&entry));
     });
 
     let selection_model = SingleSelection::new(Some(model));
-    factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
+    factory.connect_bind(clone!(@weak formula_bar, @weak selection_model, @weak api_client => move |_, list_item| {
         // Get `IntegerObject` from `ListItem`
         let integer_object = list_item
             .downcast_ref::<ListItem>()
@@ -192,10 +198,15 @@ fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
         entry.connect_activate(clone!(@weak entry =>
             move |_| {
                 println!("submitting formula {}", entry.text());
+                let mut req = InsertCellsRequest::new();
+                let cells = vec![new_insert_cell(number / NUM_COLS, number % NUM_ROWS, &entry.text())];
+                req.set_cells(RepeatedField::from_vec(cells));
+                api_client.insert_cells(&req).unwrap();
             }
         ));
         entry.connect_has_focus_notify(clone!(@weak formula_bar, @weak entry, @weak selection_model =>
             move |_| {
+            println!("Notify\n\n");
             // entry.set_css_classes(&[&String::from("ss_entry_focused")]);
             formula_bar.set_text(&entry.text());
             selection_model.select_item(number as u32, true);
@@ -234,7 +245,7 @@ fn build_grid(formula_bar: &gtk::Entry) -> gtk::GridView {
             } else {
                 inhibit = false;
             }
-            println!("key code is {}", key_code);
+            println!("key code is {}, inhibit is {}", key_code, inhibit);
             Inhibit(inhibit)
         }),
     );
@@ -289,11 +300,15 @@ fn clamp_selection(val: i32) -> i32 {
     min(max(val, 0), NUM_ROWS * NUM_COLS)
 }
 
-fn main() {
-    let grpc_env = Arc::new(grpcio::Environment::new(1));
-    let api_client =
-        SpreadsheetApiClient::new(ChannelBuilder::new(grpc_env).connect(&String::from(":9001")));
+fn new_insert_cell(row: i32, col: i32, value: &str) -> InsertCell {
+    let mut ic = InsertCell::new();
+    ic.set_row(row);
+    ic.set_col(col);
+    ic.set_value(String::from(value));
+    ic
+}
 
+fn main() {
     // Create a new application with the builder pattern
     let app = gtk::Application::builder()
         .application_id("com.github.gtk-rs.examples.basic")

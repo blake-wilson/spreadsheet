@@ -102,14 +102,16 @@ fn main() {
 
     let mut server = ServerBuilder::new(env)
         .register_service(service)
-        .bind("0.0.0.0", 9090)
         .channel_args(ch_builder.build_args())
         .build()
         .unwrap();
+    server
+        .add_listening_port("0.0.0.0:9090", grpcio::ServerCredentials::insecure())
+        .unwrap();
     server.start();
-    for (host, port) in server.bind_addrs() {
-        println!("listening on {}:{}", host, port);
-    }
+    // for (host, port) in server.bind_addrs() {
+    //     println!("listening on {}:{}", host, port);
+    // }
     let (tx, rx) = oneshot::channel();
     thread::spawn(move || {
         println!("Press ENTER to exit...");
