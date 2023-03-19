@@ -1,7 +1,9 @@
+mod spreadsheet_cell_object;
 mod ss_cell;
 
 use gdk::Display;
 use gdk4 as gdk;
+use gio::SimpleAction;
 use glib::GString;
 use glib::Object;
 use glib::StrV;
@@ -17,7 +19,8 @@ use gtk::{
 use protobuf::RepeatedField;
 use rpc_client::api::*;
 use rpc_client::api_grpc::SpreadsheetApiClient;
-use ss_cell::IntegerObject;
+use spreadsheet_cell_object::SpreadsheetCellObject;
+use ss_cell::SpreadsheetCell;
 use std::cell::Cell;
 use std::cmp::{max, min};
 use std::rc::Rc;
@@ -41,7 +44,7 @@ fn on_activate(application: &gtk::Application) {
 fn build_ui(application: &Application) {
     let grpc_env = Arc::new(grpcio::Environment::new(1));
     let api_client = Arc::new(SpreadsheetApiClient::new(
-        ChannelBuilder::new(grpc_env).connect(&String::from(":9001")),
+        ChannelBuilder::new(grpc_env).connect(&String::from("0.0.0.0:9090")),
     ));
 
     // Create two buttons
@@ -59,8 +62,6 @@ fn build_ui(application: &Application) {
         .margin_start(12)
         .margin_end(12)
         .build();
-
-    let mut selected_cell = (0, 0);
 
     // A mutable integer
     let number = Rc::new(Cell::new(0));
@@ -88,6 +89,21 @@ fn build_ui(application: &Application) {
         .width_chars(100)
         .max_width_chars(100)
         .build();
+
+    let action_formula_changed = SimpleAction::new_stateful(
+        "formula-changed",
+        Some(&String::static_variant_type()),
+        String::from("").to_variant(),
+    );
+    action_formula_changed.connect_change_state(clone!(@weak formula_bar =>
+    move |action, parameter| {
+    let str_val: String = parameter
+        .expect("Could not get parameter.")
+        .get()
+        .expect("needs to be a string");
+    formula_bar.set_text(str_val.as_str());
+    }));
+
     let grid = build_grid(&formula_bar, api_client);
     grid.set_size_request(800, 600);
 
@@ -143,12 +159,12 @@ fn build_ui(application: &Application) {
 }
 
 fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -> gtk::GridView {
-    let vector: Vec<IntegerObject> = (0..=(NUM_ROWS * NUM_COLS) as i32)
+    let vector: Vec<SpreadsheetCellObject> = (0..=(NUM_ROWS * NUM_COLS) as i32)
         .into_iter()
-        .map(IntegerObject::new)
+        .map(SpreadsheetCellObject::new)
         .collect();
     // Create new model
-    let model = gio::ListStore::new(IntegerObject::static_type());
+    let model = gio::ListStore::new(SpreadsheetCellObject::static_type());
     // Add the vector to the model
     model.extend_from_slice(&vector);
 
@@ -157,63 +173,76 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
         //let label = Label::builder()
         //    .max_width_chars(2)
         //    .build()
-        let entry = Entry::builder()
-            .max_width_chars(8)
-            .width_chars(8)
-            .css_classes(vec![GString::from_string_unchecked(String::from(
-                "ss_entry",
-            ))])
-            .build();
+        // let entry = Entry::builder()
+        //     .max_width_chars(8)
+        //     .width_chars(8)
+        //     .css_classes(vec![GString::from_string_unchecked(String::from(
+        //         "ss_entry",
+        //     ))])
+        //     .build();
+        let cell = SpreadsheetCell::new();
         let list_ref = list_item
             .downcast_ref::<ListItem>()
             .expect("Needs to be ListItem");
         list_ref.set_activatable(false);
-        list_ref.set_child(Some(&entry));
+        list_ref.set_child(Some(&cell));
     });
 
     let selection_model = SingleSelection::new(Some(model));
-    factory.connect_bind(clone!(@weak formula_bar, @weak selection_model, @weak api_client => move |_, list_item| {
-        // Get `IntegerObject` from `ListItem`
-        let integer_object = list_item
-            .downcast_ref::<ListItem>()
-            .expect("Needs to be ListItem")
-            .item()
-            .and_downcast::<IntegerObject>()
-            .expect("The item has to be an `IntegerObject`.");
+    // factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
+    //     // Get `IntegerObject` from `ListItem`
+    //     let integer_object = list_item
+    //         .downcast_ref::<ListItem>()
+    //         .expect("Needs to be ListItem")
+    //         .item()
+    //         .and_downcast::<SpreadsheetCellObject>()
+    //         .expect("The item has to be an `IntegerObject`.");
 
-        // Get `i32` from `IntegerObject`
-        let number = integer_object.property::<i32>("number");
+    //     // Get `i32` from `IntegerObject`
+    //     let number = integer_object.property::<i32>("idx");
 
-        // Get `Label` from `ListItem`
-        let entry = list_item
-            .downcast_ref::<ListItem>()
-            .expect("Needs to be ListItem")
-            .child()
-            .and_downcast::<Entry>()
-            .expect("The child has to be a `Entry`.");
-        entry.connect_changed(clone!(@weak formula_bar, @weak entry =>
-            move |_| {
-                formula_bar.set_text(&entry.text());
-        }));
-        entry.connect_activate(clone!(@weak entry =>
-            move |_| {
-                println!("submitting formula {}", entry.text());
-                let mut req = InsertCellsRequest::new();
-                let cells = vec![new_insert_cell(number / NUM_COLS, number % NUM_ROWS, &entry.text())];
-                req.set_cells(RepeatedField::from_vec(cells));
-                api_client.insert_cells(&req).unwrap();
-            }
-        ));
-        entry.connect_has_focus_notify(clone!(@weak formula_bar, @weak entry, @weak selection_model =>
-            move |_| {
-            println!("Notify\n\n");
-            // entry.set_css_classes(&[&String::from("ss_entry_focused")]);
-            formula_bar.set_text(&entry.text());
-            selection_model.select_item(number as u32, true);
-        }));
+    //     // Get `Label` from `ListItem`
+    //     let entry = list_item
+    //         .downcast_ref::<ListItem>()
+    //         .expect("Needs to be ListItem")
+    //         .child()
+    //         .and_downcast::<SpreadsheetCell>()
+    //         .expect("The child has to be a `SpreadsheetCell`.");
+    //     entry.entry().connect_changed(clone!(@weak formula_bar, @weak entry =>
+    //         move |_| {
+    //             formula_bar.set_text(&entry.text());
+    //     }));
+    //     let client = Arc::downgrade(&api_client);
+    //     entry.connect_activate(clone!(@weak entry =>
+    //         move |_| {
+    //             println!("submitting formula {}", entry.text());
+    //             let mut req = InsertCellsRequest::new();
+    //             let cells = vec![new_insert_cell(number / NUM_COLS, number % NUM_ROWS, &entry.text())];
+    //             req.set_cells(RepeatedField::from_vec(cells));
+    //             match client.upgrade() {
+    //                 Some(c) => {
+    //                     let resp = c.insert_cells(&req).unwrap();
+    //                     for cell in resp.cells {
 
-        entry.set_text(&number.to_string());
-    }));
+    //                     }
+    //                     ()
+    //                 }
+    //                 None => {
+    //                     println!("No API available!")
+    //                 }
+    //             }
+    //         }
+    //     ));
+    //     entry.connect_has_focus_notify(clone!(@weak formula_bar, @weak entry, @weak selection_model =>
+    //         move |_| {
+    //         println!("Notify\n\n");
+    //         // entry.set_css_classes(&[&String::from("ss_entry_focused")]);
+    //         // formula_bar.set_text(&entry.text());
+    //         selection_model.select_item(number as u32, true);
+    //     }));
+
+    //     // entry.set_text(&number.to_string());
+    // }));
 
     let grid = gtk::GridView::builder()
         .enable_rubberband(true)
@@ -309,6 +338,8 @@ fn new_insert_cell(row: i32, col: i32, value: &str) -> InsertCell {
 }
 
 fn main() {
+    gio::resources_register_include!("templates.gresource").expect("Failed to register resources.");
+
     // Create a new application with the builder pattern
     let app = gtk::Application::builder()
         .application_id("com.github.gtk-rs.examples.basic")

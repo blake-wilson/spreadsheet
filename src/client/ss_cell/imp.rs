@@ -1,50 +1,51 @@
-use std::cell::Cell;
-
-use glib::{ParamSpec, ParamSpecInt, Value};
-use gtk::glib;
+use glib::signal::SignalHandlerId;
+use glib::Binding;
+use glib_macros::clone;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-use once_cell::sync::Lazy;
+use gtk::{glib, CheckButton, CompositeTemplate, Entry};
+use std::cell::Cell;
+use std::cell::RefCell;
 
-// ANCHOR: integer_object
 // Object holding the state
-#[derive(Default)]
-pub struct IntegerObject {
-    number: Cell<i32>,
+#[derive(Default, CompositeTemplate)]
+#[template(resource = "/org/gtk_rs/example/cell.ui")]
+pub struct SpreadsheetCell {
+    #[template_child]
+    pub entry: TemplateChild<Entry>,
+    // Vector holding the bindings to properties of `TaskObject`
+    pub bindings: RefCell<Vec<Binding>>,
 }
-// ANCHOR_END: integer_object
 
 // The central trait for subclassing a GObject
 #[glib::object_subclass]
-impl ObjectSubclass for IntegerObject {
-    const NAME: &'static str = "MyGtkAppIntegerObject";
-    type Type = super::IntegerObject;
+impl ObjectSubclass for SpreadsheetCell {
+    // `NAME` needs to match `class` attribute of template
+    const NAME: &'static str = "SpreadsheetCell";
+    type Type = super::SpreadsheetCell;
+    type ParentType = gtk::Box;
+
+    fn class_init(klass: &mut Self::Class) {
+        klass.bind_template();
+    }
+
+    fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
+        obj.init_template();
+    }
 }
 
-// ANCHOR: object_impl
 // Trait shared by all GObjects
-impl ObjectImpl for IntegerObject {
-    fn properties() -> &'static [ParamSpec] {
-        static PROPERTIES: Lazy<Vec<ParamSpec>> =
-            Lazy::new(|| vec![ParamSpecInt::builder("number").build()]);
-        PROPERTIES.as_ref()
-    }
-
-    fn set_property(&self, _id: usize, value: &Value, pspec: &ParamSpec) {
-        match pspec.name() {
-            "number" => {
-                let input_number =
-                    value.get().expect("The value needs to be of type `i32`.");
-                self.number.replace(input_number);
-            }
-            _ => unimplemented!(),
-        }
-    }
-
-    fn property(&self, _id: usize, pspec: &ParamSpec) -> Value {
-        match pspec.name() {
-            "number" => self.number.get().to_value(),
-            _ => unimplemented!(),
-        }
+impl ObjectImpl for SpreadsheetCell {
+    fn constructed(&self) {
+        self.parent_constructed();
+        self.entry.connect_changed(move |entry| {
+            println!("text is now {}", entry.text());
+        });
     }
 }
+
+// Trait shared by all widgets
+impl WidgetImpl for SpreadsheetCell {}
+
+// Trait shared by all boxes
+impl BoxImpl for SpreadsheetCell {}

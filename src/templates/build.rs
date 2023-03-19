@@ -1,7 +1,6 @@
-pub fn main() {
-    // composite_templates
+fn main() {
     glib_build_tools::compile_resources(
-        &["src/templates"],
+        &["."],
         "src/templates/resources.gresource.xml",
         "templates.gresource",
     );
