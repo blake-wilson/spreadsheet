@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="SpreadsheetCell" parent="GtkBox">
+  <template class="GtkListItem">
     <child>
-      <object class="GtkEntry" id="entry">
+      <template class="SpreadsheetCell" parent="GtkEntry">
         <property name="margin-top">12</property>
         <property name="margin-bottom">12</property>
         <property name="margin-start">12</property>
         <property name="margin-end">12</property>
         <property name="width-chars">8</property>
         <property name="max-width-chars">8</property>
-        <!--<property name="action-name">formula.changed</property>
-        <property name="action-target">1</property>-->
-      </object>
+        <signal name="changed" handler="entry_changed" />
+      <!--<property name="action-name">formula.changed</property>
+      <property name="action-target">1</property>-->
+      </template>
     </child>
   </template>
 </interface>

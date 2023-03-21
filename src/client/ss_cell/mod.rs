@@ -4,8 +4,7 @@ use crate::spreadsheet_cell_object::SpreadsheetCellObject;
 use glib::{BindingFlags, Object};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-use gtk::{glib, pango, Entry};
-use pango::{AttrInt, AttrList};
+use gtk::{glib, Entry};
 
 const NUM_COLS: i32 = 20;
 const NUM_ROWS: i32 = 10;
@@ -24,16 +23,16 @@ impl SpreadsheetCell {
     // ANCHOR: bind
     pub fn bind(&self, ss_cell: &SpreadsheetCellObject) {
         // Get state
-        let entry = self.imp().entry.get();
+        // let entry = self.imp().entry.get();
         let mut bindings = self.imp().bindings.borrow_mut();
 
         // Bind `ss_cell.completed` to `task_row.completed_button.active`
-        let entry_binding = ss_cell
-            .bind_property("completed", &entry, "active")
-            .flags(BindingFlags::SYNC_CREATE | BindingFlags::BIDIRECTIONAL)
-            .build();
-        // Save binding
-        bindings.push(entry_binding);
+        // let entry_binding = ss_cell
+        //     .bind_property("completed", &self, "active")
+        //     .flags(BindingFlags::SYNC_CREATE | BindingFlags::BIDIRECTIONAL)
+        //     .build();
+        // // Save binding
+        // bindings.push(entry_binding);
     }
     // ANCHOR_END: bind
 
@@ -45,9 +44,18 @@ impl SpreadsheetCell {
         }
     }
 
-    pub fn entry(&self) -> Entry {
-        self.imp().entry.get()
-    }
+    // pub fn entry(&self) -> Entry {
+    //     self.imp().entry.get()
+    // }
 
     // ANCHOR_END: unbind
+}
+
+#[gtk::template_callbacks]
+impl SpreadsheetCell {
+    #[template_callback]
+    fn entry_changed(&self, _entry: &gtk::Entry) {
+        // _entry.set_text("I was clicked!");
+        println!("callback: entry is now this");
+    }
 }

@@ -19,8 +19,7 @@ use gtk::{
 use protobuf::RepeatedField;
 use rpc_client::api::*;
 use rpc_client::api_grpc::SpreadsheetApiClient;
-use spreadsheet_cell_object::SpreadsheetCellObject;
-use ss_cell::SpreadsheetCell;
+use spreadsheet_cell_object::{SpreadsheetCell, SpreadsheetCellObject};
 use std::cell::Cell;
 use std::cmp::{max, min};
 use std::rc::Rc;
@@ -79,7 +78,7 @@ fn build_ui(application: &Application) {
     button_decrease.connect_clicked(clone!(@weak button_increase, @weak button_decrease =>
         move |_| {
             number.set(number.get() - 1);
-            button_increase.set_label(&number.get().to_string());
+        button_increase.set_label(&number.get().to_string());
             button_decrease.set_label(&number.get().to_string());
     }));
 
@@ -101,7 +100,7 @@ fn build_ui(application: &Application) {
         .expect("Could not get parameter.")
         .get()
         .expect("needs to be a string");
-    formula_bar.set_text(str_val.as_str());
+    // formula_bar.set_text(str_val.as_str());
     }));
 
     let grid = build_grid(&formula_bar, api_client);
@@ -180,69 +179,64 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
         //         "ss_entry",
         //     ))])
         //     .build();
-        let cell = SpreadsheetCell::new();
-        let list_ref = list_item
-            .downcast_ref::<ListItem>()
-            .expect("Needs to be ListItem");
-        list_ref.set_activatable(false);
-        list_ref.set_child(Some(&cell));
+        // let cell = SpreadsheetCell::new();
+        // let list_ref = list_item
+        //     .downcast_ref::<ListItem>()
+        //     .expect("Needs to be ListItem");
+        // list_ref.set_activatable(false);
+        // list_ref.set_child(Some(&cell));
     });
 
     let selection_model = SingleSelection::new(Some(model));
-    // factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
-    //     // Get `IntegerObject` from `ListItem`
-    //     let integer_object = list_item
-    //         .downcast_ref::<ListItem>()
-    //         .expect("Needs to be ListItem")
-    //         .item()
-    //         .and_downcast::<SpreadsheetCellObject>()
-    //         .expect("The item has to be an `IntegerObject`.");
+    factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
+        let number = 0;
+         let lst_item = list_item.downcast_ref::<ListItem>().unwrap();
+        if let Some(item) = lst_item.item() {
+         let entry = Entry::builder()
+             .max_width_chars(8)
+             .width_chars(8)
+             .css_classes(vec![GString::from_string_unchecked(String::from(
+                 "ss_entry",
+             ))])
+             .build();
+            entry.set_text(item.property_value("value").get::<String>().unwrap().as_str());
+            item.bind_property("value", &formula_bar, "text")
+                .flags(glib::BindingFlags::DEFAULT |glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::DEFAULT).build();
+         entry.connect_changed(clone!(@weak formula_bar, @weak entry, @weak item =>
+             move |_| {
+                 item.set_property("value", entry.text().as_str())
+             }));
+         let client = Arc::downgrade(&api_client);
+         entry.connect_activate(clone!(@weak entry =>
+             move |_| {
+                 println!("submitting formula {}", entry.text());
+                 let mut req = InsertCellsRequest::new();
+                 let cells = vec![new_insert_cell(number / NUM_COLS, number % NUM_ROWS, &entry.text())];
+                 req.set_cells(RepeatedField::from_vec(cells));
+                 match client.upgrade() {
+                     Some(c) => {
+                         let resp = c.insert_cells(&req).unwrap();
+                         for cell in resp.cells {
+                         }
+                         ()
+                     }
+                     None => {
+                         println!("No API available!")
+                     }
+                 }
+             }
+         ));
+         entry.connect_has_focus_notify(clone!(@weak formula_bar, @weak entry, @weak selection_model =>
+             move |_| {
+             println!("Notify\n\n");
+             // entry.set_css_classes(&[&String::from("ss_entry_focused")]);
+             // formula_bar.set_text(&entry.text());
+             selection_model.select_item(number as u32, true);
+         }));
 
-    //     // Get `i32` from `IntegerObject`
-    //     let number = integer_object.property::<i32>("idx");
-
-    //     // Get `Label` from `ListItem`
-    //     let entry = list_item
-    //         .downcast_ref::<ListItem>()
-    //         .expect("Needs to be ListItem")
-    //         .child()
-    //         .and_downcast::<SpreadsheetCell>()
-    //         .expect("The child has to be a `SpreadsheetCell`.");
-    //     entry.entry().connect_changed(clone!(@weak formula_bar, @weak entry =>
-    //         move |_| {
-    //             formula_bar.set_text(&entry.text());
-    //     }));
-    //     let client = Arc::downgrade(&api_client);
-    //     entry.connect_activate(clone!(@weak entry =>
-    //         move |_| {
-    //             println!("submitting formula {}", entry.text());
-    //             let mut req = InsertCellsRequest::new();
-    //             let cells = vec![new_insert_cell(number / NUM_COLS, number % NUM_ROWS, &entry.text())];
-    //             req.set_cells(RepeatedField::from_vec(cells));
-    //             match client.upgrade() {
-    //                 Some(c) => {
-    //                     let resp = c.insert_cells(&req).unwrap();
-    //                     for cell in resp.cells {
-
-    //                     }
-    //                     ()
-    //                 }
-    //                 None => {
-    //                     println!("No API available!")
-    //                 }
-    //             }
-    //         }
-    //     ));
-    //     entry.connect_has_focus_notify(clone!(@weak formula_bar, @weak entry, @weak selection_model =>
-    //         move |_| {
-    //         println!("Notify\n\n");
-    //         // entry.set_css_classes(&[&String::from("ss_entry_focused")]);
-    //         // formula_bar.set_text(&entry.text());
-    //         selection_model.select_item(number as u32, true);
-    //     }));
-
-    //     // entry.set_text(&number.to_string());
-    // }));
+         lst_item.set_child(Some(&entry));
+        }
+     }));
 
     let grid = gtk::GridView::builder()
         .enable_rubberband(true)

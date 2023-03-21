@@ -1,18 +1,15 @@
-use glib::signal::SignalHandlerId;
 use glib::Binding;
-use glib_macros::clone;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-use gtk::{glib, CheckButton, CompositeTemplate, Entry};
-use std::cell::Cell;
+use gtk::{glib, CompositeTemplate};
 use std::cell::RefCell;
 
 // Object holding the state
-#[derive(Default, CompositeTemplate)]
+#[derive(Default, Debug, CompositeTemplate)]
 #[template(resource = "/org/gtk_rs/example/cell.ui")]
 pub struct SpreadsheetCell {
     #[template_child]
-    pub entry: TemplateChild<Entry>,
+    pub entry: TemplateChild<gtk::Entry>,
     // Vector holding the bindings to properties of `TaskObject`
     pub bindings: RefCell<Vec<Binding>>,
 }
@@ -23,10 +20,11 @@ impl ObjectSubclass for SpreadsheetCell {
     // `NAME` needs to match `class` attribute of template
     const NAME: &'static str = "SpreadsheetCell";
     type Type = super::SpreadsheetCell;
-    type ParentType = gtk::Box;
+    type ParentType = gtk::Entry;
 
     fn class_init(klass: &mut Self::Class) {
         klass.bind_template();
+        klass.bind_template_instance_callbacks();
     }
 
     fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
@@ -38,14 +36,13 @@ impl ObjectSubclass for SpreadsheetCell {
 impl ObjectImpl for SpreadsheetCell {
     fn constructed(&self) {
         self.parent_constructed();
-        self.entry.connect_changed(move |entry| {
-            println!("text is now {}", entry.text());
-        });
+        // self.connect_changed(move |entry| {
+        //     println!("text is now {}", entry.text());
+        // });
     }
 }
 
 // Trait shared by all widgets
 impl WidgetImpl for SpreadsheetCell {}
 
-// Trait shared by all boxes
-impl BoxImpl for SpreadsheetCell {}
+impl EntryImpl for SpreadsheetCell {}
