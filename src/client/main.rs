@@ -24,8 +24,8 @@ use std::cmp::{max, min};
 use std::rc::Rc;
 use std::sync::Arc;
 
-const NUM_COLS: i32 = 20;
-const NUM_ROWS: i32 = 10;
+const NUM_COLS: i32 = 10;
+const NUM_ROWS: i32 = 20;
 
 fn build_ui(application: &Application) {
     let grpc_env = Arc::new(grpcio::Environment::new(1));
@@ -122,7 +122,7 @@ fn build_ui(application: &Application) {
     let window = ApplicationWindow::builder()
         .application(application)
         .title("My GTK App")
-        .default_width(1200)
+        .default_width(600)
         .default_height(650)
         .child(&gtk_box)
         .build();
@@ -150,10 +150,36 @@ fn build_ui(application: &Application) {
 // ]));
 
 fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -> gtk::GridView {
+    let mut req = GetCellsRequest::new();
+    let mut get_rect = Rect::new();
+    get_rect.set_start_row(0);
+    get_rect.set_start_col(0);
+    get_rect.set_stop_col(NUM_COLS);
+    get_rect.set_stop_row(NUM_ROWS);
+    req.set_rect(get_rect);
+    let cells_resp = api_client.get_cells(&req).unwrap();
+
     let vector: Vec<SpreadsheetCellObject> = (0..(NUM_COLS * NUM_ROWS) as i32)
         .into_iter()
         .map(SpreadsheetCellObject::new)
         .collect();
+    let cells: Vec<rpc_client::api::Cell> = cells_resp.cells.to_vec();
+    // .map(SpreadsheetCellObject::new_from_cell)
+    // .collect();
+
+    println!("cells: {:#?}", cells);
+    cells
+        .into_iter()
+        .map(|c| {
+            println!("setting cell object to {:#?}", c);
+            let idx = row_major_idx(c.row, c.col) as usize;
+            vector
+                .get(idx)
+                .unwrap()
+                .set_property("displayvalue", c.display_value);
+            vector.get(idx).unwrap().set_property("value", c.value);
+        })
+        .for_each(drop);
     // Create new model
     let model = gio::ListStore::new(SpreadsheetCellObject::static_type());
     // let model = ArcListModel::new();
@@ -195,15 +221,15 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
              ))])
              .build();
             number = item.property_value("idx").get::<i32>().unwrap();
-            entry.set_text(item.property_value("value").get::<String>().unwrap().as_str());
+            entry.set_text(item.property_value("displayvalue").get::<String>().unwrap().as_str());
             item.bind_property("value", &formula_bar, "text")
                 .flags(glib::BindingFlags::DEFAULT |glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::DEFAULT).build();
          entry.connect_changed(clone!(@weak formula_bar, @weak entry, @weak item =>
              move |_| {
-                 item.set_property("value", entry.text().as_str())
+                 // item.set_property("value", entry.text().as_str())
              }));
          let client = Arc::downgrade(&api_client);
-         entry.connect_activate(clone!(@weak entry, @weak selection_model =>
+         entry.connect_activate(clone!(@weak item, @weak entry, @weak selection_model =>
              move |_| {
                  println!("submitting formula {}", entry.text());
                  let mut req = InsertCellsRequest::new();
@@ -211,6 +237,7 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
                  req.set_cells(RepeatedField::from_vec(cells));
                  match client.upgrade() {
                      Some(c) => {
+                         item.set_property("value", entry.text().as_str());
                          let resp = c.insert_cells(&req).unwrap();
                          println!("resp cells: {:#?}", resp.cells);
                          for cell in resp.cells {
@@ -219,7 +246,7 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
                              let item = selection_model.item(model_idx);
                              // item.unwrap().set_property("value", cell.value);
                              println!("updating item {:#?} with value {:#?}", item, cell.display_value);
-                             item.unwrap().set_property("value", cell.display_value);
+                             item.unwrap().set_property("displayvalue", cell.display_value);
                              selection_model.emit_by_name::<()>("items-changed", &[&model_idx, &num_removed, &num_added]);
                          }
                      }
@@ -235,6 +262,8 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
              // entry.set_css_classes(&[&String::from("ss_entry_focused")]);
              // formula_bar.set_text(&entry.text());
              selection_model.select_item(number as u32, true);
+             formula_bar.set_text(item.property_value("value").get::<String>().unwrap().as_str());
+             entry.set_text(item.property_value("value").get::<String>().unwrap().as_str());
          }));
 
          lst_item.set_child(Some(&entry));

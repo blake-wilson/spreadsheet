@@ -32,6 +32,7 @@ impl ObjectImpl for SpreadsheetCellObject {
                 ParamSpecBoolean::builder("completed").build(),
                 ParamSpecInt::builder("idx").build(),
                 ParamSpecString::builder("value").build(),
+                ParamSpecString::builder("displayvalue").build(),
             ]
         });
         PROPERTIES.as_ref()
@@ -53,6 +54,12 @@ impl ObjectImpl for SpreadsheetCellObject {
                     .expect("The value needs to be of type `String`.");
                 self.data.borrow_mut().value = input_value;
             }
+            "displayvalue" => {
+                let input_value = value
+                    .get()
+                    .expect("The value needs to be of type `String`.");
+                self.data.borrow_mut().display_value = input_value;
+            }
             _ => unimplemented!(),
         }
     }
@@ -62,6 +69,7 @@ impl ObjectImpl for SpreadsheetCellObject {
             "completed" => self.data.borrow().completed.to_value(),
             "idx" => self.data.borrow().idx.to_value(),
             "value" => self.data.borrow().value.to_value(),
+            "displayvalue" => self.data.borrow().display_value.to_value(),
             _ => unimplemented!(),
         }
     }
