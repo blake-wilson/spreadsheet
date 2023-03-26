@@ -3,6 +3,8 @@ mod ss_cell;
 
 use gdk::Display;
 use gdk4 as gdk;
+use gio::ffi;
+use gio::traits::ListModelExt;
 use gio::SimpleAction;
 use glib::GString;
 use glib::Object;
@@ -23,7 +25,7 @@ use spreadsheet_cell_object::{SpreadsheetCell, SpreadsheetCellObject};
 use std::cell::Cell;
 use std::cmp::{max, min};
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 const NUM_COLS: i32 = 20;
 const NUM_ROWS: i32 = 10;
@@ -157,13 +159,19 @@ fn build_ui(application: &Application) {
     formula_bar.grab_focus();
 }
 
+// static VECTOR: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(vec![
+//     String::from("");
+//     (NUM_COLS * NUM_ROWS) as usize
+// ]));
+
 fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -> gtk::GridView {
-    let vector: Vec<SpreadsheetCellObject> = (0..=(NUM_ROWS * NUM_COLS) as i32)
+    let vector: Vec<SpreadsheetCellObject> = (0..(NUM_COLS * NUM_ROWS) as i32)
         .into_iter()
         .map(SpreadsheetCellObject::new)
         .collect();
     // Create new model
     let model = gio::ListStore::new(SpreadsheetCellObject::static_type());
+    // let model = ArcListModel::new();
     // Add the vector to the model
     model.extend_from_slice(&vector);
 
@@ -187,9 +195,11 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
         // list_ref.set_child(Some(&cell));
     });
 
+    // let model_2 = model.downgrade();
     let selection_model = SingleSelection::new(Some(model));
+
     factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
-        let number = 0;
+        let mut number = 0;
          let lst_item = list_item.downcast_ref::<ListItem>().unwrap();
         if let Some(item) = lst_item.item() {
          let entry = Entry::builder()
@@ -199,6 +209,7 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
                  "ss_entry",
              ))])
              .build();
+            number = item.property_value("idx").get::<i32>().unwrap();
             entry.set_text(item.property_value("value").get::<String>().unwrap().as_str());
             item.bind_property("value", &formula_bar, "text")
                 .flags(glib::BindingFlags::DEFAULT |glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::DEFAULT).build();
@@ -207,7 +218,7 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
                  item.set_property("value", entry.text().as_str())
              }));
          let client = Arc::downgrade(&api_client);
-         entry.connect_activate(clone!(@weak entry =>
+         entry.connect_activate(clone!(@weak entry, @weak selection_model =>
              move |_| {
                  println!("submitting formula {}", entry.text());
                  let mut req = InsertCellsRequest::new();
@@ -216,9 +227,16 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
                  match client.upgrade() {
                      Some(c) => {
                          let resp = c.insert_cells(&req).unwrap();
+                         println!("resp cells: {:#?}", resp.cells);
                          for cell in resp.cells {
+                             let model_idx = row_major_idx(cell.row, cell.col) as u32;
+                             let (num_removed, num_added) = (0 as u32, 0 as u32);
+                             let item = selection_model.item(model_idx);
+                             // item.unwrap().set_property("value", cell.value);
+                             println!("updating item {:#?} with value {:#?}", item, cell.display_value);
+                             item.unwrap().set_property("value", cell.display_value);
+                             selection_model.emit_by_name::<()>("items-changed", &[&model_idx, &num_removed, &num_added]);
                          }
-                         ()
                      }
                      None => {
                          println!("No API available!")
@@ -317,6 +335,10 @@ fn load_css() {
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
+}
+
+fn row_major_idx(row: i32, col: i32) -> i32 {
+    (row * NUM_COLS) + col
 }
 
 fn clamp_selection(val: i32) -> i32 {
