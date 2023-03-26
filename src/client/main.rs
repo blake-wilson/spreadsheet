@@ -3,44 +3,29 @@ mod ss_cell;
 
 use gdk::Display;
 use gdk4 as gdk;
-use gio::ffi;
 use gio::traits::ListModelExt;
 use gio::SimpleAction;
 use glib::GString;
-use glib::Object;
-use glib::StrV;
 use glib_macros::clone;
 use grpcio::ChannelBuilder;
 use gtk::glib;
 use gtk::prelude::BoxExt;
 use gtk::prelude::*;
 use gtk::{
-    Application, ApplicationWindow, Button, Entry, EventController, EventControllerKey, Inhibit,
-    ListItem, PropagationPhase, ScrolledWindow, SignalListItemFactory, SingleSelection,
+    Application, ApplicationWindow, Button, Entry, EventControllerKey, Inhibit, ListItem,
+    PropagationPhase, ScrolledWindow, SignalListItemFactory, SingleSelection,
 };
 use protobuf::RepeatedField;
 use rpc_client::api::*;
 use rpc_client::api_grpc::SpreadsheetApiClient;
-use spreadsheet_cell_object::{SpreadsheetCell, SpreadsheetCellObject};
+use spreadsheet_cell_object::SpreadsheetCellObject;
 use std::cell::Cell;
 use std::cmp::{max, min};
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 const NUM_COLS: i32 = 20;
 const NUM_ROWS: i32 = 10;
-
-// When the application is launched…
-fn on_activate(application: &gtk::Application) {
-    // … create a new window …
-    let window = gtk::ApplicationWindow::new(application);
-    // … with a button in it …
-    let button = gtk::Button::with_label("Hello World!");
-    // … which closes the window when clicked
-    button.connect_clicked(clone!(@weak window => move |_| window.close()));
-    window.set_child(Some(&button));
-    window.present();
-}
 
 fn build_ui(application: &Application) {
     let grpc_env = Arc::new(grpcio::Environment::new(1));
@@ -97,12 +82,12 @@ fn build_ui(application: &Application) {
         String::from("").to_variant(),
     );
     action_formula_changed.connect_change_state(clone!(@weak formula_bar =>
-    move |action, parameter| {
-    let str_val: String = parameter
-        .expect("Could not get parameter.")
-        .get()
-        .expect("needs to be a string");
-    // formula_bar.set_text(str_val.as_str());
+        move |action, parameter| {
+            let str_val: String = parameter
+                .expect("Could not get parameter.")
+                .get()
+                .expect("needs to be a string");
+            // formula_bar.set_text(str_val.as_str());
     }));
 
     let grid = build_grid(&formula_bar, api_client);
@@ -176,30 +161,30 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
     model.extend_from_slice(&vector);
 
     let factory = SignalListItemFactory::new();
-    factory.connect_setup(move |_, list_item| {
-        //let label = Label::builder()
-        //    .max_width_chars(2)
-        //    .build()
-        // let entry = Entry::builder()
-        //     .max_width_chars(8)
-        //     .width_chars(8)
-        //     .css_classes(vec![GString::from_string_unchecked(String::from(
-        //         "ss_entry",
-        //     ))])
-        //     .build();
-        // let cell = SpreadsheetCell::new();
-        // let list_ref = list_item
-        //     .downcast_ref::<ListItem>()
-        //     .expect("Needs to be ListItem");
-        // list_ref.set_activatable(false);
-        // list_ref.set_child(Some(&cell));
-    });
+    // factory.connect_setup(move |_, list_item| {
+    //let label = Label::builder()
+    //    .max_width_chars(2)
+    //    .build()
+    // let entry = Entry::builder()
+    //     .max_width_chars(8)
+    //     .width_chars(8)
+    //     .css_classes(vec![GString::from_string_unchecked(String::from(
+    //         "ss_entry",
+    //     ))])
+    //     .build();
+    // let cell = SpreadsheetCell::new();
+    // let list_ref = list_item
+    //     .downcast_ref::<ListItem>()
+    //     .expect("Needs to be ListItem");
+    // list_ref.set_activatable(false);
+    // list_ref.set_child(Some(&cell));
+    // });
 
     // let model_2 = model.downgrade();
     let selection_model = SingleSelection::new(Some(model));
 
     factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
-        let mut number = 0;
+        let number;
          let lst_item = list_item.downcast_ref::<ListItem>().unwrap();
         if let Some(item) = lst_item.item() {
          let entry = Entry::builder()

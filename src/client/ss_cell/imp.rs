@@ -1,5 +1,4 @@
 use glib::Binding;
-use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 use gtk::{glib, CompositeTemplate};
 use std::cell::RefCell;
