@@ -157,7 +157,9 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
     get_rect.set_stop_col(NUM_COLS);
     get_rect.set_stop_row(NUM_ROWS);
     req.set_rect(get_rect);
-    let cells_resp = api_client.get_cells(&req).unwrap();
+    let cells_resp = api_client
+        .get_cells(&req)
+        .expect("failed to get initial API response");
 
     let vector: Vec<SpreadsheetCellObject> = (0..(NUM_COLS * NUM_ROWS) as i32)
         .into_iter()
@@ -167,13 +169,15 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
     cells
         .into_iter()
         .map(|c| {
-            println!("setting cell object to {:#?}", c);
             let idx = row_major_idx(c.row, c.col) as usize;
             vector
                 .get(idx)
-                .unwrap()
+                .expect("needs to be a SpreadsheetCellObject")
                 .set_property("displayvalue", c.display_value);
-            vector.get(idx).unwrap().set_property("value", c.value);
+            vector
+                .get(idx)
+                .expect(&format!("must have entry for idx {:?}", idx))
+                .set_property("value", c.value);
         })
         .for_each(drop);
     // Create new model
@@ -183,41 +187,56 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
     model.extend_from_slice(&vector);
 
     let factory = SignalListItemFactory::new();
-    // factory.connect_setup(move |_, list_item| {
-    //let label = Label::builder()
-    //    .max_width_chars(2)
-    //    .build()
-    // let entry = Entry::builder()
-    //     .max_width_chars(8)
-    //     .width_chars(8)
-    //     .css_classes(vec![GString::from_string_unchecked(String::from(
-    //         "ss_entry",
-    //     ))])
-    //     .build();
-    // let cell = SpreadsheetCell::new();
-    // let list_ref = list_item
-    //     .downcast_ref::<ListItem>()
-    //     .expect("Needs to be ListItem");
-    // list_ref.set_activatable(false);
-    // list_ref.set_child(Some(&cell));
-    // });
-
+    factory.connect_setup(clone!(@weak formula_bar => move |_, list_item| {
+        let lst_item = list_item
+            .downcast_ref::<ListItem>()
+            .expect("needs to be a ListItem");
+        let entry = Entry::builder()
+            .max_width_chars(8)
+            .width_chars(8)
+            .css_classes(vec![GString::from_string_unchecked(String::from(
+                "ss_entry",
+            ))])
+            .build();
+        match lst_item.item() {
+            Some(item) => {entry.set_text(
+                item.property_value("displayvalue")
+                    .get::<String>()
+                    .expect("displayvalue needs to be a String")
+                    .as_str());
+                item.bind_property("value", &formula_bar, "text")
+                    .flags(
+                        glib::BindingFlags::DEFAULT
+                            | glib::BindingFlags::SYNC_CREATE
+                            | glib::BindingFlags::DEFAULT,
+                    )
+                    .build();
+                }
+            None => (),
+        }
+        lst_item.set_child(Some(&entry));
+    }));
     // let model_2 = model.downgrade();
     let selection_model = SingleSelection::new(Some(model));
 
     factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
         let number;
-         let lst_item = list_item.downcast_ref::<ListItem>().unwrap();
+        println!("{:#?}", list_item
+                .downcast_ref::<ListItem>()
+                .expect("Needs to be ListItem")
+                .child());
+
+        let entry = list_item
+                .downcast_ref::<ListItem>()
+                .expect("Needs to be ListItem")
+                .child()
+                .and_downcast::<Entry>()
+                .expect("The child has to be an `Entry`.");
+
+        let lst_item = list_item.downcast_ref::<ListItem>().expect("needs to be a ListItem");
         if let Some(item) = lst_item.item() {
-         let entry = Entry::builder()
-             .max_width_chars(8)
-             .width_chars(8)
-             .css_classes(vec![GString::from_string_unchecked(String::from(
-                 "ss_entry",
-             ))])
-             .build();
-            number = item.property_value("idx").get::<i32>().unwrap();
-            entry.set_text(item.property_value("displayvalue").get::<String>().unwrap().as_str());
+            number = item.property_value("idx").get::<i32>().expect("property idx needs to be i32");
+            entry.set_text(item.property_value("displayvalue").get::<String>().expect("displayvalue needs to be a String").as_str());
             item.bind_property("value", &formula_bar, "text")
                 .flags(glib::BindingFlags::DEFAULT |glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::DEFAULT).build();
          entry.connect_changed(clone!(@weak formula_bar, @weak entry, @weak item =>
@@ -240,10 +259,9 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
                                  for cell in cells.cells {
                                      let model_idx = row_major_idx(cell.row, cell.col) as u32;
                                      let (num_removed, num_added) = (0 as u32, 0 as u32);
-                                     let item = selection_model.item(model_idx);
-                                     // item.unwrap().set_property("value", cell.value);
+                                     let item = selection_model.item(model_idx).expect("item needs to be a GObject");
                                      println!("updating item {:#?} with value {:#?} at ({:?}, {:?})", item, cell.display_value, cell.row, cell.col);
-                                     item.unwrap().set_property("displayvalue", cell.display_value);
+                                     item.set_property("displayvalue", cell.display_value);
                                      selection_model.emit_by_name::<()>("items-changed", &[&model_idx, &num_removed, &num_added]);
                                  }
                              Err(e) => println!("error inserting cells: {:?}", e)
@@ -257,12 +275,17 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
          ));
          entry.connect_has_focus_notify(clone!(@weak formula_bar, @weak entry, @weak selection_model =>
              move |_| {
-             println!("Notify\n\n");
+             println!("Notify selecting item {:?}\n\n", number);
              // entry.set_css_classes(&[&String::from("ss_entry_focused")]);
              // formula_bar.set_text(&entry.text());
              selection_model.select_item(number as u32, true);
-             formula_bar.set_text(item.property_value("value").get::<String>().unwrap().as_str());
-             entry.set_text(item.property_value("value").get::<String>().unwrap().as_str());
+             match item.property_value("value").get::<String>() {
+                 Ok(val) => {
+                     formula_bar.set_text(val.as_str());
+                     entry.set_text(val.as_str());
+                 }
+                 Err(_) => (),
+            }
          }));
 
          lst_item.set_child(Some(&entry));
@@ -288,6 +311,7 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
             //     selection_model.selected_item().unwrap().downcast_ref::<gtk::Widget>()
             //         .expect("Needs to be a Widget").grab_focus();
             // }
+            println!("selecting {:?}", clamp_selection(selection_model.selected() as i32 - NUM_COLS));
             if key_code == 123 { // left arrow
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 - 1) as u32, true);
             } else if key_code == 124 { // left arrow
