@@ -164,10 +164,6 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
         .map(SpreadsheetCellObject::new)
         .collect();
     let cells: Vec<rpc_client::api::Cell> = cells_resp.cells.to_vec();
-    // .map(SpreadsheetCellObject::new_from_cell)
-    // .collect();
-
-    println!("cells: {:#?}", cells);
     cells
         .into_iter()
         .map(|c| {
@@ -233,21 +229,24 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
              move |_| {
                  println!("submitting formula {}", entry.text());
                  let mut req = InsertCellsRequest::new();
-                 let cells = vec![new_insert_cell(number / NUM_COLS, number % NUM_ROWS, &entry.text())];
+                 let cells = vec![new_insert_cell(number / NUM_COLS, number % NUM_COLS, &entry.text())];
                  req.set_cells(RepeatedField::from_vec(cells));
                  match client.upgrade() {
                      Some(c) => {
                          item.set_property("value", entry.text().as_str());
-                         let resp = c.insert_cells(&req).unwrap();
-                         println!("resp cells: {:#?}", resp.cells);
-                         for cell in resp.cells {
-                             let model_idx = row_major_idx(cell.row, cell.col) as u32;
-                             let (num_removed, num_added) = (0 as u32, 0 as u32);
-                             let item = selection_model.item(model_idx);
-                             // item.unwrap().set_property("value", cell.value);
-                             println!("updating item {:#?} with value {:#?}", item, cell.display_value);
-                             item.unwrap().set_property("displayvalue", cell.display_value);
-                             selection_model.emit_by_name::<()>("items-changed", &[&model_idx, &num_removed, &num_added]);
+                         let resp = c.insert_cells(&req);
+                         match resp {
+                             Ok(cells) =>
+                                 for cell in cells.cells {
+                                     let model_idx = row_major_idx(cell.row, cell.col) as u32;
+                                     let (num_removed, num_added) = (0 as u32, 0 as u32);
+                                     let item = selection_model.item(model_idx);
+                                     // item.unwrap().set_property("value", cell.value);
+                                     println!("updating item {:#?} with value {:#?} at ({:?}, {:?})", item, cell.display_value, cell.row, cell.col);
+                                     item.unwrap().set_property("displayvalue", cell.display_value);
+                                     selection_model.emit_by_name::<()>("items-changed", &[&model_idx, &num_removed, &num_added]);
+                                 }
+                             Err(e) => println!("error inserting cells: {:?}", e)
                          }
                      }
                      None => {
