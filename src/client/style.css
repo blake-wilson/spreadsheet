@@ -3,23 +3,32 @@ gridview child {
     max-height: 20px;
 }
 
-.ss_entry {
+.ss_cell {
     padding: 2px;
     margin: 0px;
+    background-color: #fcf8eb;
+    border-radius: 0;
+    border-spacing: 0px;
 }
 
-.ss_entry:focus-within {
+.ss_cell:focus-within {
     border: 2px solid green;
 }
 
-.ss_entry_focused {
+.ss_cell_focused {
     border: 2px solid green;
 }
 
-.ss_entry:selected {
+.ss_cell:selected {
     background-color: black;
     border: 2px solid green;
 }
 
+box, entry {
+    margin: 0px;
+}
 
-GtkLabel { background-color: #AAAAAA;}
+child {
+    padding: 0px;
+    outline-offset: 0px;
+}

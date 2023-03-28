@@ -33,72 +33,13 @@ fn build_ui(application: &Application) {
         ChannelBuilder::new(grpc_env).connect(&String::from("0.0.0.0:9090")),
     ));
 
-    // Create two buttons
-    let button_increase = Button::builder()
-        .label("Increase")
-        .margin_top(12)
-        .margin_bottom(12)
-        .margin_start(12)
-        .margin_end(12)
-        .build();
-    let button_decrease = Button::builder()
-        .label("Decrease")
-        .margin_top(12)
-        .margin_bottom(12)
-        .margin_start(12)
-        .margin_end(12)
-        .build();
-
-    // A mutable integer
-    let number = Rc::new(Cell::new(0));
-
-    // Connect callbacks
-    // When a button is clicked, `number` and label of the other button will be changed
-    button_increase.connect_clicked(
-        clone!(@weak number, @weak button_decrease, @weak button_increase =>
-            move |_| {
-                number.set(number.get() + 1);
-                button_decrease.set_label(&number.get().to_string());
-                button_increase.set_label(&number.get().to_string());
-        }),
-    );
-    button_decrease.connect_clicked(clone!(@weak button_increase, @weak button_decrease =>
-        move |_| {
-            number.set(number.get() - 1);
-        button_increase.set_label(&number.get().to_string());
-            button_decrease.set_label(&number.get().to_string());
-    }));
-
-    // Add buttons to `gtk_box`
-
     let formula_bar = gtk::Entry::builder()
         .width_chars(100)
         .max_width_chars(100)
         .build();
 
-    let action_formula_changed = SimpleAction::new_stateful(
-        "formula-changed",
-        Some(&String::static_variant_type()),
-        String::from("").to_variant(),
-    );
-    action_formula_changed.connect_change_state(clone!(@weak formula_bar =>
-        move |action, parameter| {
-            let str_val: String = parameter
-                .expect("Could not get parameter.")
-                .get()
-                .expect("needs to be a string");
-            // formula_bar.set_text(str_val.as_str());
-    }));
-
     let grid = build_grid(&formula_bar, api_client);
     grid.set_size_request(800, 600);
-
-    // let layout_grid = gtk::Grid::builder()
-    //     .row_homogeneous(false)
-    //     .column_homogeneous(false)
-    //     .build();
-    // layout_grid.attach(&formula_bar, 0, 0, 1, 1);
-    // layout_grid.attach(&grid, 0, 1, 1, 1);
 
     let gtk_box = gtk::Box::builder()
         .margin_top(2)
@@ -111,8 +52,7 @@ fn build_ui(application: &Application) {
     gtk_box.append(&formula_bar);
 
     let scrolled_window = ScrolledWindow::builder()
-        //.hscrollbar_policy(gtk::PolicyType::Never) // Disable horizontal scrolling
-        .min_content_width(360)
+        .min_content_width(340)
         .min_content_height(600)
         .child(&grid)
         .build();
@@ -122,32 +62,15 @@ fn build_ui(application: &Application) {
     let window = ApplicationWindow::builder()
         .application(application)
         .title("My GTK App")
-        .default_width(600)
+        .default_width(400)
         .default_height(650)
         .child(&gtk_box)
         .build();
 
     // Present the window
-    // let key_controller = EventControllerKey::builder().build();
     window.present();
-    // key_controller.connect_key_pressed(
-    //     //clone!(@weak selection_model => @default-return Inhibit(false), move |_, key, key_code, _| {
-    //     move |_, key, key_code, _| -> Inhibit {
-    //         // selection_model.select_item(selection_model.selected() + 1, true);
-    //         println!("key {} was clicked!", key_code);
-    //         Inhibit(false)
-    //         //}),
-    //     },
-    // );
-    // key_controller.set_propagation_phase(PropagationPhase::Capture);
-    // window.add_controller(key_controller);
     formula_bar.grab_focus();
 }
-
-// static VECTOR: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(vec![
-//     String::from("");
-//     (NUM_COLS * NUM_ROWS) as usize
-// ]));
 
 fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -> gtk::GridView {
     let mut req = GetCellsRequest::new();
@@ -224,6 +147,7 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
 
     let grid = gtk::GridView::builder()
         .enable_rubberband(true)
+        .halign(gtk::Align::Fill)
         .factory(&factory)
         .model(&selection_model)
         .max_columns(NUM_COLS as u32)
