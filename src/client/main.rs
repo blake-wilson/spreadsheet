@@ -218,7 +218,7 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
         if let Some(item) = lst_item.item() {
             cell.set_property("displayvalue", item.property_value("displayvalue").get::<String>().expect("displayvalue needs to be a String").as_str());
         }
-        cell.bind(&formula_bar);
+        cell.bind(&selection_model, &formula_bar);
         lst_item.set_child(Some(&cell));
      }));
 

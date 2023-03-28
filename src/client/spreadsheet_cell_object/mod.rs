@@ -2,9 +2,10 @@ mod imp;
 
 use glib::object::ObjectExt;
 use glib::Object;
+use glib_macros::clone;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-use gtk::{glib, Entry};
+use gtk::{glib, Entry, SingleSelection};
 use rpc_client::api;
 
 const NUM_COLS: i32 = 10;
@@ -35,7 +36,7 @@ impl SpreadsheetCellObject {
 }
 
 impl SpreadsheetCellObject {
-    pub fn bind(&self, formula_bar: &Entry) {
+    pub fn bind(&self, selection_model: &SingleSelection, formula_bar: &Entry) {
         // Get state
         let mut bindings = self.imp().bindings.borrow_mut();
 
@@ -53,6 +54,11 @@ impl SpreadsheetCellObject {
         //     .flags(glib::BindingFlags::DEFAULT)
         //     .build();
         // Save binding
+        let idx = self.property_value("idx").get::<i32>().unwrap();
+        entry.connect_has_focus_notify(clone!(@weak selection_model =>
+            move |_| {
+                selection_model.select_item(idx as u32, true);
+        }));
         bindings.push(value_binding);
         bindings.push(display_value_binding);
         // bindings.push(formula_bar_binding);
