@@ -185,111 +185,41 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
     // let model = ArcListModel::new();
     // Add the vector to the model
     model.extend_from_slice(&vector);
-
+    let selection_model = SingleSelection::new(Some(model));
     let factory = SignalListItemFactory::new();
+
     factory.connect_setup(clone!(@weak formula_bar => move |_, list_item| {
         let lst_item = list_item
             .downcast_ref::<ListItem>()
             .expect("needs to be a ListItem");
-        let entry = Entry::builder()
-            .max_width_chars(8)
-            .width_chars(8)
-            .css_classes(vec![GString::from_string_unchecked(String::from(
-                "ss_entry",
-            ))])
-            .build();
+        let ss_cell = SpreadsheetCellObject::new(0);
         match lst_item.item() {
-            Some(item) => {entry.set_text(
-                item.property_value("displayvalue")
+            Some(item) => {
+                let dv = item.property_value("displayvalue")
                     .get::<String>()
-                    .expect("displayvalue needs to be a String")
-                    .as_str());
-                item.bind_property("value", &formula_bar, "text")
-                    .flags(
-                        glib::BindingFlags::DEFAULT
-                            | glib::BindingFlags::SYNC_CREATE
-                            | glib::BindingFlags::DEFAULT,
-                    )
-                    .build();
-                }
+                    .expect("displayvalue needs to be a String");
+                ss_cell.set_property("displayvalue", dv.as_str());
+            },
             None => (),
         }
-        lst_item.set_child(Some(&entry));
+        lst_item.set_child(Some(&ss_cell));
     }));
-    // let model_2 = model.downgrade();
-    let selection_model = SingleSelection::new(Some(model));
 
     factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
-        let number;
-        println!("{:#?}", list_item
+        println!("binding item");
+        let cell = list_item
                 .downcast_ref::<ListItem>()
                 .expect("Needs to be ListItem")
-                .child());
-
-        let entry = list_item
-                .downcast_ref::<ListItem>()
-                .expect("Needs to be ListItem")
-                .child()
-                .and_downcast::<Entry>()
-                .expect("The child has to be an `Entry`.");
+                .item()
+                .and_downcast::<SpreadsheetCellObject>()
+                .expect("The child has to be an `SpreadsheetCellObject`.");
 
         let lst_item = list_item.downcast_ref::<ListItem>().expect("needs to be a ListItem");
         if let Some(item) = lst_item.item() {
-            number = item.property_value("idx").get::<i32>().expect("property idx needs to be i32");
-            entry.set_text(item.property_value("displayvalue").get::<String>().expect("displayvalue needs to be a String").as_str());
-            item.bind_property("value", &formula_bar, "text")
-                .flags(glib::BindingFlags::DEFAULT |glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::DEFAULT).build();
-         entry.connect_changed(clone!(@weak formula_bar, @weak entry, @weak item =>
-             move |_| {
-                 // item.set_property("value", entry.text().as_str())
-             }));
-         let client = Arc::downgrade(&api_client);
-         entry.connect_activate(clone!(@weak item, @weak entry, @weak selection_model =>
-             move |_| {
-                 println!("submitting formula {}", entry.text());
-                 let mut req = InsertCellsRequest::new();
-                 let cells = vec![new_insert_cell(number / NUM_COLS, number % NUM_COLS, &entry.text())];
-                 req.set_cells(RepeatedField::from_vec(cells));
-                 match client.upgrade() {
-                     Some(c) => {
-                         item.set_property("value", entry.text().as_str());
-                         let resp = c.insert_cells(&req);
-                         match resp {
-                             Ok(cells) =>
-                                 for cell in cells.cells {
-                                     let model_idx = row_major_idx(cell.row, cell.col) as u32;
-                                     let (num_removed, num_added) = (0 as u32, 0 as u32);
-                                     let item = selection_model.item(model_idx).expect("item needs to be a GObject");
-                                     println!("updating item {:#?} with value {:#?} at ({:?}, {:?})", item, cell.display_value, cell.row, cell.col);
-                                     item.set_property("displayvalue", cell.display_value);
-                                     selection_model.emit_by_name::<()>("items-changed", &[&model_idx, &num_removed, &num_added]);
-                                 }
-                             Err(e) => println!("error inserting cells: {:?}", e)
-                         }
-                     }
-                     None => {
-                         println!("No API available!")
-                     }
-                 }
-             }
-         ));
-         entry.connect_has_focus_notify(clone!(@weak formula_bar, @weak entry, @weak selection_model =>
-             move |_| {
-             println!("Notify selecting item {:?}\n\n", number);
-             // entry.set_css_classes(&[&String::from("ss_entry_focused")]);
-             // formula_bar.set_text(&entry.text());
-             selection_model.select_item(number as u32, true);
-             match item.property_value("value").get::<String>() {
-                 Ok(val) => {
-                     formula_bar.set_text(val.as_str());
-                     entry.set_text(val.as_str());
-                 }
-                 Err(_) => (),
-            }
-         }));
-
-         lst_item.set_child(Some(&entry));
+            cell.set_property("displayvalue", item.property_value("displayvalue").get::<String>().expect("displayvalue needs to be a String").as_str());
         }
+        cell.bind(&formula_bar);
+        lst_item.set_child(Some(&cell));
      }));
 
     let grid = gtk::GridView::builder()
@@ -305,13 +235,11 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
     key_controller.connect_key_pressed(
         clone!(@weak selection_model => @default-return Inhibit(false), move |_, _, key_code, _| {
             println!("current selection is {}", selection_model.selected());
-            println!("current selected item is {:?}", selection_model.selected_item());
             let mut inhibit = true;
             // if key_code >= 123 && key_code <= 126 {
             //     selection_model.selected_item().unwrap().downcast_ref::<gtk::Widget>()
             //         .expect("Needs to be a Widget").grab_focus();
             // }
-            println!("selecting {:?}", clamp_selection(selection_model.selected() as i32 - NUM_COLS));
             if key_code == 123 { // left arrow
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 - 1) as u32, true);
             } else if key_code == 124 { // left arrow
@@ -320,7 +248,45 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 + NUM_COLS) as u32, true);
             } else if key_code == 126 { // up arrow
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 - NUM_COLS) as u32, true);
+            } else if key_code == 36 { // ENTER
+                let sel = selection_model.selected_item().unwrap();
+                println!("selection is {:#?}", sel);
+                let idx = sel.property_value("idx").get::<i32>().unwrap();
+                let item = selection_model.item(idx as u32).expect("item needs to be a GObject");
+                let cell_val = item.property_value("value").get::<String>().unwrap();
+                let entry = sel.downcast::<SpreadsheetCellObject>().unwrap();
+                println!("entry text: {}", entry.entry_txt());
+                let client = Arc::downgrade(&api_client);
+                println!("submitting formula at {}: {:#?}", idx, cell_val);
+                let mut req = InsertCellsRequest::new();
+                let cells = vec![new_insert_cell(idx / NUM_COLS, idx % NUM_COLS, &cell_val)];
+                req.set_cells(RepeatedField::from_vec(cells));
+                match client.upgrade() {
+                    Some(c) => {
+                        let resp = c.insert_cells(&req);
+                        match resp {
+                            Ok(cells) =>
+                                for cell in cells.cells {
+                                    println!("updating cell {:#?}", cell);
+                                    let model_idx = row_major_idx(cell.row, cell.col) as u32;
+                                    let (num_removed, num_added) = (0 as u32, 0 as u32);
+                                    let item = selection_model.item(model_idx).expect("item needs to be a GObject");
+                                    println!("updating item {:#?} with value {:#?} at ({:?}, {:?})", item, cell.display_value, cell.row, cell.col);
+                                    item.set_property("displayvalue", cell.display_value);
+                                    selection_model.emit_by_name::<()>("items-changed", &[&model_idx, &num_removed, &num_added]);
+                                }
+                            Err(e) => println!("error inserting cells: {:?}", e)
+                        }
+                    }
+                    None => {
+                        println!("No API available!")
+                    }
+                }
             } else {
+                // let sel = selection_model.selected_item().unwrap();
+                // let idx = sel.property_value("idx").get::<i32>().unwrap();
+                // let (num_removed, num_added) = (0 as u32, 0 as u32);
+                // selection_model.emit_by_name::<()>("items-changed", &[&(idx as u32), &num_removed, &num_added]);
                 inhibit = false;
             }
             println!("key code is {}, inhibit is {}", key_code, inhibit);
