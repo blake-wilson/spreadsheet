@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use glib::subclass::InitializingObject;
-use glib::Binding;
+use glib::{Binding, SignalHandlerId};
 use glib::{ParamSpec, ParamSpecBoolean, ParamSpecInt, ParamSpecString, Value};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
@@ -19,6 +19,7 @@ pub struct SpreadsheetCellObject {
 
     pub data: Rc<RefCell<SpreadsheetCell>>,
     pub bindings: RefCell<Vec<Binding>>,
+    pub gesture_handler: RefCell<Option<SignalHandlerId>>,
 }
 
 // The central trait for subclassing a GObject
@@ -51,7 +52,7 @@ impl ObjectImpl for SpreadsheetCellObject {
     }
 
     fn set_property(&self, _id: usize, value: &Value, pspec: &ParamSpec) {
-        println!("setting property {} {:#?}", pspec.name(), value);
+        // println!("setting property {} {:#?}", pspec.name(), value);
         match pspec.name() {
             "idx" => {
                 let input_value = value.get().expect("The value needs to be of type `int`.");
@@ -71,18 +72,16 @@ impl ObjectImpl for SpreadsheetCellObject {
             }
             _ => unimplemented!(),
         }
-        println!("done setting property");
     }
 
     fn property(&self, _id: usize, pspec: &ParamSpec) -> Value {
-        println!("getting property {:#?}", pspec.name());
+        // println!("getting property {:#?}", pspec.name());
         let ret = match pspec.name() {
             "idx" => self.data.borrow().idx.to_value(),
             "value" => self.data.borrow().value.to_value(),
             "displayvalue" => self.data.borrow().display_value.to_value(),
             _ => unimplemented!(),
         };
-        println!("got property value {:#?}", ret);
         ret
     }
 }

@@ -4,28 +4,25 @@ mod ss_cell;
 use gdk::Display;
 use gdk4 as gdk;
 use gio::traits::ListModelExt;
-use gio::SimpleAction;
-use glib::GString;
+use glib::SignalHandlerId;
 use glib_macros::clone;
 use grpcio::ChannelBuilder;
 use gtk::glib;
 use gtk::prelude::BoxExt;
 use gtk::prelude::*;
 use gtk::{
-    Application, ApplicationWindow, Button, Entry, EventControllerKey, Inhibit, ListItem,
+    Application, ApplicationWindow, EventControllerKey, GestureClick, Inhibit, ListItem,
     PropagationPhase, ScrolledWindow, SignalListItemFactory, SingleSelection,
 };
 use protobuf::RepeatedField;
 use rpc_client::api::*;
 use rpc_client::api_grpc::SpreadsheetApiClient;
 use spreadsheet_cell_object::SpreadsheetCellObject;
-use std::cell::Cell;
 use std::cmp::{max, min};
-use std::rc::Rc;
 use std::sync::Arc;
 
-const NUM_COLS: i32 = 10;
-const NUM_ROWS: i32 = 20;
+const NUM_COLS: i32 = 36;
+const NUM_ROWS: i32 = 36;
 
 fn build_ui(application: &Application) {
     let grpc_env = Arc::new(grpcio::Environment::new(1));
@@ -34,7 +31,8 @@ fn build_ui(application: &Application) {
     ));
 
     let formula_bar = gtk::Entry::builder()
-        .width_chars(100)
+        // .width_chars(100)
+        // .width_request(200)
         .max_width_chars(100)
         .build();
 
@@ -62,7 +60,7 @@ fn build_ui(application: &Application) {
     let window = ApplicationWindow::builder()
         .application(application)
         .title("My GTK App")
-        .default_width(400)
+        .default_width(800)
         .default_height(650)
         .child(&gtk_box)
         .build();
@@ -111,25 +109,48 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
     let selection_model = SingleSelection::new(Some(model));
     let factory = SignalListItemFactory::new();
 
-    factory.connect_setup(clone!(@weak formula_bar => move |_, list_item| {
+    factory.connect_setup(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
         let lst_item = list_item
             .downcast_ref::<ListItem>()
             .expect("needs to be a ListItem");
         let ss_cell = SpreadsheetCellObject::new(0);
         match lst_item.item() {
             Some(item) => {
+                let idx = item.property_value("idx")
+                    .get::<i32>()
+                    .expect("index needs to be a i32");
+                ss_cell.set_property("idx", idx);
                 let dv = item.property_value("displayvalue")
                     .get::<String>()
                     .expect("displayvalue needs to be a String");
                 ss_cell.set_property("displayvalue", dv.as_str());
+                ss_cell.connect(&selection_model);
             },
             None => (),
         }
+        // let click_gesture = GestureClick::new();
+        // click_gesture.set_propagation_phase(PropagationPhase::Capture);
+        // click_gesture.connect_pressed(clone!(@weak ss_cell, @weak selection_model => move |_, _, _, _| {
+        //     ss_cell.focus();
+        //     let idx = ss_cell.property_value("idx").get::<i32>().unwrap();
+        //     println!("selecting idx {}", idx);
+        //     selection_model.select_item(clamp_selection(idx) as u32, true);
+        // }));
+        // ss_cell.add_controller(click_gesture);
+        selection_model.connect_selection_changed(clone!(@weak selection_model => move |_, pos, _| {
+            println!("selecting item {}", pos);
+            let widget = selection_model.selected_item()
+                .unwrap();
+            let cell = widget
+                    .downcast_ref::<SpreadsheetCellObject>()
+                    .expect("The widget must be a `SpreadsheetCellObject`.");
+                println!("widget: {:#?}", cell);
+                cell.focus();
+        }));
         lst_item.set_child(Some(&ss_cell));
     }));
 
     factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
-        println!("binding item");
         let cell = list_item
                 .downcast_ref::<ListItem>()
                 .expect("Needs to be ListItem")
@@ -145,6 +166,16 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
         lst_item.set_child(Some(&cell));
      }));
 
+    factory.connect_unbind(move |_, list_item| {
+        let cell = list_item
+            .downcast_ref::<ListItem>()
+            .expect("Needs to be ListItem")
+            .item()
+            .and_downcast::<SpreadsheetCellObject>()
+            .expect("The child has to be an `SpreadsheetCellObject`.");
+        cell.unbind();
+    });
+
     let grid = gtk::GridView::builder()
         .enable_rubberband(true)
         .halign(gtk::Align::Fill)
@@ -152,6 +183,7 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
         .model(&selection_model)
         .max_columns(NUM_COLS as u32)
         .min_columns(NUM_COLS as u32)
+        .width_request(200)
         .build();
 
     let key_controller = EventControllerKey::builder().build();
@@ -160,10 +192,6 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
         clone!(@weak selection_model => @default-return Inhibit(false), move |_, _, key_code, _| {
             println!("current selection is {}", selection_model.selected());
             let mut inhibit = true;
-            // if key_code >= 123 && key_code <= 126 {
-            //     selection_model.selected_item().unwrap().downcast_ref::<gtk::Widget>()
-            //         .expect("Needs to be a Widget").grab_focus();
-            // }
             if key_code == 123 { // left arrow
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 - 1) as u32, true);
             } else if key_code == 124 { // left arrow
@@ -207,10 +235,6 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
                     }
                 }
             } else {
-                // let sel = selection_model.selected_item().unwrap();
-                // let idx = sel.property_value("idx").get::<i32>().unwrap();
-                // let (num_removed, num_added) = (0 as u32, 0 as u32);
-                // selection_model.emit_by_name::<()>("items-changed", &[&(idx as u32), &num_removed, &num_added]);
                 inhibit = false;
             }
             println!("key code is {}, inhibit is {}", key_code, inhibit);
@@ -219,35 +243,6 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
     );
     grid.add_controller(key_controller);
 
-    // let cell_width = 1;
-    // let cell_height = 1;
-    // // rows
-    // for i in 1..10 {
-    //     //cols
-    //     for j in 1..8 {
-    //         let txt_edit = gtk::Entry::builder()
-    //             .margin_top(2)
-    //             .margin_bottom(2)
-    //             .margin_start(2)
-    //             .margin_end(2)
-    //             .width_chars(8)
-    //             .max_width_chars(8)
-    //             .css_classes(vec![GString::from_string_unchecked(String::from(
-    //                 "ss_entry",
-    //             ))])
-    //             .build();
-    //         txt_edit.connect_changed(clone!(@weak formula_bar, @weak txt_edit =>
-    //             move |_| {
-    //                 formula_bar.set_text(&txt_edit.text());
-    //         }));
-    //         txt_edit.connect_has_focus_notify(clone!(@weak formula_bar, @weak txt_edit =>
-    //             move |_| {
-    //             txt_edit.set_css_classes(&[&String::from("ss_entry_focused")]);
-    //                 formula_bar.set_text(&txt_edit.text());
-    //         }));
-    //         // grid.attach(&txt_edit, j * cell_width, i * cell_height, 1, 1);
-    //     }
-    // }
     grid
 }
 
