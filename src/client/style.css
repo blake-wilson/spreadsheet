@@ -28,8 +28,11 @@ box, entry {
     margin: 0px;
 }
 
+entry {
+    min-height: 12px;
+}
+
 child {
     padding: 0px;
     outline-offset: 0px;
 }
-

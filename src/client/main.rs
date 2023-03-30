@@ -4,15 +4,14 @@ mod ss_cell;
 use gdk::Display;
 use gdk4 as gdk;
 use gio::traits::ListModelExt;
-use glib::SignalHandlerId;
 use glib_macros::clone;
 use grpcio::ChannelBuilder;
 use gtk::glib;
 use gtk::prelude::BoxExt;
 use gtk::prelude::*;
 use gtk::{
-    Application, ApplicationWindow, EventControllerKey, GestureClick, Inhibit, ListItem,
-    PropagationPhase, ScrolledWindow, SignalListItemFactory, SingleSelection,
+    Application, ApplicationWindow, EventControllerKey, Inhibit, ListItem, PropagationPhase,
+    ScrolledWindow, SignalListItemFactory, SingleSelection,
 };
 use protobuf::RepeatedField;
 use rpc_client::api::*;
@@ -22,7 +21,7 @@ use std::cmp::{max, min};
 use std::sync::Arc;
 
 const NUM_COLS: i32 = 36;
-const NUM_ROWS: i32 = 36;
+const NUM_ROWS: i32 = 72;
 
 fn build_ui(application: &Application) {
     let grpc_env = Arc::new(grpcio::Environment::new(1));
@@ -128,15 +127,6 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
             },
             None => (),
         }
-        // let click_gesture = GestureClick::new();
-        // click_gesture.set_propagation_phase(PropagationPhase::Capture);
-        // click_gesture.connect_pressed(clone!(@weak ss_cell, @weak selection_model => move |_, _, _, _| {
-        //     ss_cell.focus();
-        //     let idx = ss_cell.property_value("idx").get::<i32>().unwrap();
-        //     println!("selecting idx {}", idx);
-        //     selection_model.select_item(clamp_selection(idx) as u32, true);
-        // }));
-        // ss_cell.add_controller(click_gesture);
         selection_model.connect_selection_changed(clone!(@weak selection_model => move |_, pos, _| {
             println!("selecting item {}", pos);
             let widget = selection_model.selected_item()
