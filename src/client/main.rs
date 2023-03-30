@@ -7,6 +7,7 @@ use gio::traits::ListModelExt;
 use glib_macros::clone;
 use grpcio::ChannelBuilder;
 use gtk::glib;
+use gtk::glib::GString;
 use gtk::prelude::BoxExt;
 use gtk::prelude::*;
 use gtk::{
@@ -33,6 +34,9 @@ fn build_ui(application: &Application) {
         // .width_chars(100)
         // .width_request(200)
         .max_width_chars(100)
+        .css_classes(vec![GString::from_string_unchecked(String::from(
+            "formula_bar",
+        ))])
         .build();
 
     let grid = build_grid(&formula_bar, api_client);
@@ -123,19 +127,16 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
                     .get::<String>()
                     .expect("displayvalue needs to be a String");
                 ss_cell.set_property("displayvalue", dv.as_str());
-                ss_cell.connect(&selection_model);
             },
             None => (),
         }
-        selection_model.connect_selection_changed(clone!(@weak selection_model => move |_, pos, _| {
-            println!("selecting item {}", pos);
+        selection_model.connect_selection_changed(clone!(@weak selection_model => move |_, _, _| {
             let widget = selection_model.selected_item()
                 .unwrap();
             let cell = widget
                     .downcast_ref::<SpreadsheetCellObject>()
                     .expect("The widget must be a `SpreadsheetCellObject`.");
-                println!("widget: {:#?}", cell);
-                cell.focus();
+            cell.focus();
         }));
         lst_item.set_child(Some(&ss_cell));
     }));
@@ -153,6 +154,7 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
             cell.set_property("displayvalue", item.property_value("displayvalue").get::<String>().expect("displayvalue needs to be a String").as_str());
         }
         cell.bind(&selection_model, &formula_bar);
+        cell.connect(&selection_model, &formula_bar);
         lst_item.set_child(Some(&cell));
      }));
 
@@ -180,7 +182,6 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
     key_controller.set_propagation_phase(PropagationPhase::Capture);
     key_controller.connect_key_pressed(
         clone!(@weak selection_model => @default-return Inhibit(false), move |_, _, key_code, _| {
-            println!("current selection is {}", selection_model.selected());
             let mut inhibit = true;
             if key_code == 123 { // left arrow
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 - 1) as u32, true);
@@ -192,12 +193,11 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 - NUM_COLS) as u32, true);
             } else if key_code == 36 { // ENTER
                 let sel = selection_model.selected_item().unwrap();
-                println!("selection is {:#?}", sel);
                 let idx = sel.property_value("idx").get::<i32>().unwrap();
                 let item = selection_model.item(idx as u32).expect("item needs to be a GObject");
-                let cell_val = item.property_value("value").get::<String>().unwrap();
-                let entry = sel.downcast::<SpreadsheetCellObject>().unwrap();
-                println!("entry text: {}", entry.entry_txt());
+                let cell = sel.downcast::<SpreadsheetCellObject>().unwrap();
+                let cell_val = cell.entry_txt();
+                item.set_property("value", cell_val.clone());
                 let client = Arc::downgrade(&api_client);
                 println!("submitting formula at {}: {:#?}", idx, cell_val);
                 let mut req = InsertCellsRequest::new();

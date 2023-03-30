@@ -32,6 +32,10 @@ entry {
     min-height: 12px;
 }
 
+entry.formula_bar {
+    min-height: 22px;
+}
+
 child {
     padding: 0px;
     outline-offset: 0px;

@@ -42,18 +42,10 @@ impl SpreadsheetCellObject {
         let mut bindings = self.imp().bindings.borrow_mut();
 
         let entry = self.imp().entry.get();
-        let value_binding = entry
-            .bind_property("text", self, "value")
-            .flags(glib::BindingFlags::DEFAULT | glib::BindingFlags::SYNC_CREATE)
-            .build();
         let display_value_binding = self
             .bind_property("displayvalue", &entry, "text")
             .flags(glib::BindingFlags::DEFAULT | glib::BindingFlags::SYNC_CREATE)
             .build();
-        // let formula_bar_binding = entry
-        //     .bind_property("text", formula_bar, "text")
-        //     .flags(glib::BindingFlags::DEFAULT)
-        //     .build();
         // Save binding
         let click_gesture = GestureClick::new();
         click_gesture.set_propagation_phase(PropagationPhase::Capture);
@@ -68,9 +60,7 @@ impl SpreadsheetCellObject {
         self.imp().gesture_handler.replace(Some(id));
 
         self.add_controller(click_gesture);
-        bindings.push(value_binding);
         bindings.push(display_value_binding);
-        // bindings.push(formula_bar_binding);
     }
     pub fn unbind(&self) {
         // Unbind all stored bindings
@@ -85,20 +75,20 @@ impl SpreadsheetCellObject {
         self.imp().entry.get().text().to_string()
     }
     pub fn focus(&self) {
-        println!(
-            "focusing cell {:?}",
-            self.property_value("idx").get::<i32>().unwrap()
-        );
         self.imp().entry.grab_focus();
     }
-    pub fn connect(&self, selection_model: &SingleSelection) {
+    pub fn connect(&self, selection_model: &SingleSelection, formula_bar: &Entry) {
         let entry = self.imp().entry.get();
         let idx = self.property_value("idx").get::<i32>().unwrap();
-        entry.connect_has_focus_notify(clone!(@weak entry, @weak selection_model =>
-            move |_| {
-                println!("selecting item {}", idx);
-                selection_model.select_item(idx as u32, true);
-        }));
+        let value = self.property_value("value").get::<String>().unwrap();
+        entry.connect_has_focus_notify(
+            clone!(@weak entry, @weak selection_model, @weak formula_bar =>
+                move |_| {
+                    selection_model.select_item(idx as u32, true);
+                    formula_bar.set_text(&value);
+                    entry.set_text(&value);
+            }),
+        );
     }
 }
 
