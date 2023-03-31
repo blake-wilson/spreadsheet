@@ -6,7 +6,7 @@ use glib::{Binding, SignalHandlerId};
 use glib::{ParamSpec, ParamSpecBoolean, ParamSpecInt, ParamSpecString, Value};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-use gtk::{glib, CompositeTemplate, Entry};
+use gtk::{glib, CompositeTemplate, Entry, EventControllerFocus, GestureClick};
 use once_cell::sync::Lazy;
 
 use super::SpreadsheetCell;
@@ -19,7 +19,8 @@ pub struct SpreadsheetCellObject {
 
     pub data: Rc<RefCell<SpreadsheetCell>>,
     pub bindings: RefCell<Vec<Binding>>,
-    pub gesture_handler: RefCell<Option<SignalHandlerId>>,
+    pub gesture_handler: RefCell<Option<GestureClick>>,
+    pub focus_handler: RefCell<Option<EventControllerFocus>>,
 }
 
 // The central trait for subclassing a GObject

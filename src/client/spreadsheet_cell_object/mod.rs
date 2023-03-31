@@ -1,12 +1,13 @@
 mod imp;
 
 use glib::object::ObjectExt;
+use glib::ParamSpec;
 use glib::{Object, SignalHandlerId};
 use glib_macros::clone;
 use gtk::prelude::*;
 use gtk::prelude::{EntryExt, WidgetExt};
 use gtk::subclass::prelude::*;
-use gtk::{glib, Entry, GestureClick, PropagationPhase, SingleSelection};
+use gtk::{glib, Entry, EventControllerFocus, GestureClick, PropagationPhase, SingleSelection};
 use rpc_client::api;
 use std::cell::Ref;
 use std::cell::RefCell;
@@ -42,33 +43,45 @@ impl SpreadsheetCellObject {
         let mut bindings = self.imp().bindings.borrow_mut();
 
         let entry = self.imp().entry.get();
-        let display_value_binding = self
-            .bind_property("displayvalue", &entry, "text")
+        let placeholder_binding = self
+            .bind_property("displayvalue", &entry, "placeholder-text")
             .flags(glib::BindingFlags::DEFAULT | glib::BindingFlags::SYNC_CREATE)
             .build();
         // Save binding
         let click_gesture = GestureClick::new();
         click_gesture.set_propagation_phase(PropagationPhase::Capture);
         let id = click_gesture.connect_pressed(
-            clone!(@weak self as this, @weak selection_model => move |_, _, _, _| {
-                this.focus();
+            clone!(@weak self as this, @weak selection_model, @weak entry, @weak formula_bar => move |_, _, _, _| {
                 let idx = this.property_value("idx").get::<i32>().unwrap();
                 println!("selecting idx {}", idx);
                 selection_model.select_item(idx as u32, true);
             }),
         );
-        self.imp().gesture_handler.replace(Some(id));
-
+        let focus_controller = EventControllerFocus::new();
+        let focus_handler_id =
+            focus_controller.connect_leave(clone!(@weak self as this, @weak entry => move |_| {
+                entry.set_text("");
+            }));
+        self.imp()
+            .gesture_handler
+            .replace(Some(click_gesture.clone()));
+        self.imp()
+            .focus_handler
+            .replace(Some(focus_controller.clone()));
+        entry.add_controller(focus_controller);
         self.add_controller(click_gesture);
-        bindings.push(display_value_binding);
+        bindings.push(placeholder_binding);
     }
     pub fn unbind(&self) {
         // Unbind all stored bindings
         for binding in self.imp().bindings.borrow_mut().drain(..) {
             binding.unbind();
         }
-        if let Some(id) = self.imp().gesture_handler.take() {
-            self.disconnect(id);
+        if let Some(ctrl) = self.imp().gesture_handler.take() {
+            self.remove_controller(&ctrl);
+        }
+        if let Some(ctrl) = self.imp().focus_handler.take() {
+            self.imp().entry.remove_controller(&ctrl);
         }
     }
     pub fn entry_txt(&self) -> String {
@@ -84,7 +97,6 @@ impl SpreadsheetCellObject {
         entry.connect_has_focus_notify(
             clone!(@weak entry, @weak selection_model, @weak formula_bar =>
                 move |_| {
-                    selection_model.select_item(idx as u32, true);
                     formula_bar.set_text(&value);
                     entry.set_text(&value);
             }),
