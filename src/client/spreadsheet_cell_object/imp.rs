@@ -19,8 +19,9 @@ pub struct SpreadsheetCellObject {
 
     pub data: Rc<RefCell<SpreadsheetCell>>,
     pub bindings: RefCell<Vec<Binding>>,
-    pub gesture_handler: RefCell<Option<GestureClick>>,
+    pub gesture_handler: Rc<RefCell<Option<GestureClick>>>,
     pub focus_handler: RefCell<Option<EventControllerFocus>>,
+    pub click_signal: RefCell<Option<SignalHandlerId>>,
 }
 
 // The central trait for subclassing a GObject

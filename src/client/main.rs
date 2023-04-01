@@ -112,33 +112,35 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
     let selection_model = SingleSelection::new(Some(model));
     let factory = SignalListItemFactory::new();
 
-    factory.connect_setup(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
-        let lst_item = list_item
-            .downcast_ref::<ListItem>()
-            .expect("needs to be a ListItem");
-        let ss_cell = SpreadsheetCellObject::new(0);
-        match lst_item.item() {
-            Some(item) => {
-                let idx = item.property_value("idx")
-                    .get::<i32>()
-                    .expect("index needs to be a i32");
-                ss_cell.set_property("idx", idx);
-                let dv = item.property_value("displayvalue")
-                    .get::<String>()
-                    .expect("displayvalue needs to be a String");
-                ss_cell.set_property("displayvalue", dv.as_str());
-            },
-            None => (),
-        }
-        selection_model.connect_selection_changed(clone!(@weak selection_model => move |_, _, _| {
-            let widget = selection_model.selected_item()
-                .unwrap();
-            let cell = widget
-                    .downcast_ref::<SpreadsheetCellObject>()
-                    .expect("The widget must be a `SpreadsheetCellObject`.");
-            cell.focus();
-        }));
-        lst_item.set_child(Some(&ss_cell));
+    factory.connect_setup(
+        clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
+            let lst_item = list_item
+                .downcast_ref::<ListItem>()
+                .expect("needs to be a ListItem");
+            let ss_cell = SpreadsheetCellObject::new(0);
+            match lst_item.item() {
+                Some(item) => {
+                    let idx = item.property_value("idx")
+                        .get::<i32>()
+                        .expect("index needs to be a i32");
+                    ss_cell.set_property("idx", idx);
+                    let dv = item.property_value("displayvalue")
+                        .get::<String>()
+                        .expect("displayvalue needs to be a String");
+                    ss_cell.set_property("displayvalue", dv.as_str());
+                },
+                None => (),
+            }
+            lst_item.set_child(Some(&ss_cell));
+        }),
+    );
+    selection_model.connect_selection_changed(clone!(@weak selection_model => move |_, _, _| {
+        let widget = selection_model.selected_item()
+            .unwrap();
+        let cell = widget
+                .downcast_ref::<SpreadsheetCellObject>()
+                .expect("The widget must be a `SpreadsheetCellObject`.");
+        cell.focus();
     }));
 
     factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
@@ -154,19 +156,20 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
             cell.set_property("displayvalue", item.property_value("displayvalue").get::<String>().expect("displayvalue needs to be a String").as_str());
         }
         cell.bind(&selection_model, &formula_bar);
-        cell.connect(&selection_model, &formula_bar);
         lst_item.set_child(Some(&cell));
      }));
 
-    factory.connect_unbind(move |_, list_item| {
+    factory.connect_unbind(clone!(@weak selection_model => move |_, list_item| {
         let cell = list_item
             .downcast_ref::<ListItem>()
             .expect("Needs to be ListItem")
             .item()
             .and_downcast::<SpreadsheetCellObject>()
             .expect("The child has to be an `SpreadsheetCellObject`.");
-        cell.unbind();
-    });
+        let cell_idx = cell.property_value("idx").get::<i32>().unwrap();
+        let clear_entry = selection_model.selected() != cell_idx as u32;
+        cell.unbind(clear_entry);
+    }));
 
     let grid = gtk::GridView::builder()
         .enable_rubberband(true)

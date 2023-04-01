@@ -1,16 +1,13 @@
 mod imp;
 
 use glib::object::ObjectExt;
-use glib::ParamSpec;
-use glib::{Object, SignalHandlerId};
+use glib::Object;
 use glib_macros::clone;
+use gtk::prelude::WidgetExt;
 use gtk::prelude::*;
-use gtk::prelude::{EntryExt, WidgetExt};
 use gtk::subclass::prelude::*;
 use gtk::{glib, Entry, EventControllerFocus, GestureClick, PropagationPhase, SingleSelection};
 use rpc_client::api;
-use std::cell::Ref;
-use std::cell::RefCell;
 
 const NUM_COLS: i32 = 10;
 const NUM_ROWS: i32 = 20;
@@ -39,7 +36,6 @@ impl SpreadsheetCellObject {
 
 impl SpreadsheetCellObject {
     pub fn bind(&self, selection_model: &SingleSelection, formula_bar: &Entry) {
-        // Get state
         let mut bindings = self.imp().bindings.borrow_mut();
 
         let entry = self.imp().entry.get();
@@ -50,38 +46,61 @@ impl SpreadsheetCellObject {
         // Save binding
         let click_gesture = GestureClick::new();
         click_gesture.set_propagation_phase(PropagationPhase::Capture);
-        let id = click_gesture.connect_pressed(
+        let click_sig = click_gesture.connect_pressed(
             clone!(@weak self as this, @weak selection_model, @weak entry, @weak formula_bar => move |_, _, _, _| {
                 let idx = this.property_value("idx").get::<i32>().unwrap();
-                println!("selecting idx {}", idx);
                 selection_model.select_item(idx as u32, true);
             }),
         );
         let focus_controller = EventControllerFocus::new();
-        let focus_handler_id =
-            focus_controller.connect_leave(clone!(@weak self as this, @weak entry => move |_| {
-                entry.set_text("");
-            }));
-        self.imp()
-            .gesture_handler
-            .replace(Some(click_gesture.clone()));
-        self.imp()
-            .focus_handler
-            .replace(Some(focus_controller.clone()));
-        entry.add_controller(focus_controller);
-        self.add_controller(click_gesture);
+        focus_controller.set_propagation_phase(PropagationPhase::Target);
+        focus_controller.connect_leave(clone!(@weak self as this, @weak entry => move |_| {
+            println!("clearing entry text");
+            entry.set_text("");
+        }));
+        focus_controller.connect_enter(
+            clone!(@weak self as this, @weak entry, @weak formula_bar => move |_| {
+                println!("idx is {}", this.property_value("idx").get::<i32>().unwrap());
+                let val = this.property_value("value").get::<String>().unwrap();
+                entry.set_text(&val);
+                formula_bar.set_text(&val);
+                println!("setting entry text to {}", val);
+            }),
+        );
+        // if let Some(ctrl) = self.imp().gesture_handler.take() {
+        //     println!("adding controller: {:#?}", ctrl);
+        //     self.add_controller(self.imp().gesture_handler.clone());
+        // }
+        clone!(@strong click_gesture => move || {
+            self.add_controller(click_gesture);
+        })();
+        self.imp().gesture_handler.replace(Some(click_gesture));
+
+        self.imp().click_signal.replace(Some(click_sig));
+
+        clone!(@strong focus_controller => move || {
+            self.add_controller(focus_controller);
+        })();
+        self.imp().focus_handler.replace(Some(focus_controller));
         bindings.push(placeholder_binding);
     }
-    pub fn unbind(&self) {
+
+    pub fn unbind(&self, clear_entry: bool) {
+        if clear_entry {
+            self.imp().entry.set_text("");
+        }
         // Unbind all stored bindings
         for binding in self.imp().bindings.borrow_mut().drain(..) {
             binding.unbind();
         }
         if let Some(ctrl) = self.imp().gesture_handler.take() {
+            if let Some(sig_id) = self.imp().click_signal.take() {
+                ctrl.disconnect(sig_id);
+            }
             self.remove_controller(&ctrl);
         }
         if let Some(ctrl) = self.imp().focus_handler.take() {
-            self.imp().entry.remove_controller(&ctrl);
+            self.remove_controller(&ctrl);
         }
     }
     pub fn entry_txt(&self) -> String {
