@@ -43,6 +43,7 @@ impl SpreadsheetCellObject {
             .bind_property("displayvalue", &entry, "placeholder-text")
             .flags(glib::BindingFlags::DEFAULT | glib::BindingFlags::SYNC_CREATE)
             .build();
+
         // Save binding
         let click_gesture = GestureClick::new();
         click_gesture.set_propagation_phase(PropagationPhase::Capture);
@@ -120,6 +121,9 @@ impl SpreadsheetCellObject {
                     entry.set_text(&value);
             }),
         );
+    }
+    pub fn set_text(&self, txt: String) {
+        self.imp().entry.set_text(&txt);
     }
 }
 

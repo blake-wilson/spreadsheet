@@ -134,14 +134,39 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
             lst_item.set_child(Some(&ss_cell));
         }),
     );
-    selection_model.connect_selection_changed(clone!(@weak selection_model => move |_, _, _| {
-        let widget = selection_model.selected_item()
-            .unwrap();
-        let cell = widget
-                .downcast_ref::<SpreadsheetCellObject>()
-                .expect("The widget must be a `SpreadsheetCellObject`.");
-        cell.focus();
-    }));
+    selection_model.connect_selection_changed(
+        clone!(@weak selection_model, @weak formula_bar => move |_, _, _| {
+            let widget = selection_model.selected_item()
+                .unwrap();
+            let cell = widget
+                    .downcast_ref::<SpreadsheetCellObject>()
+                    .expect("The widget must be a `SpreadsheetCellObject`.");
+            cell.focus();
+        }),
+    );
+    let formula_changed = formula_bar.connect_changed(
+        clone!(@weak selection_model, @weak formula_bar => move |_| {
+            let widget = selection_model.selected_item()
+                .unwrap();
+            let cell = widget
+                    .downcast_ref::<SpreadsheetCellObject>()
+                    .expect("The widget must be a `SpreadsheetCellObject`.");
+            cell.set_text(formula_bar.text().to_string());
+        }),
+    );
+    formula_bar.connect_activate(
+        clone!(@weak formula_bar, @weak selection_model, @weak api_client => move |_| {
+            let sel = selection_model.selected_item().unwrap();
+            let idx = sel.property_value("idx").get::<i32>().unwrap();
+            let item = selection_model.item(idx as u32).expect("item needs to be a GObject");
+            let cell = sel.downcast::<SpreadsheetCellObject>().unwrap();
+            let cell_val = formula_bar.text();
+            item.set_property("value", cell_val.clone());
+            insert_cell(&cell, &selection_model, &api_client);
+
+            selection_model.select_item(clamp_selection(selection_model.selected() as i32 + NUM_COLS) as u32, true);
+        }),
+    );
 
     factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
         let cell = list_item
@@ -268,6 +293,40 @@ fn new_insert_cell(row: i32, col: i32, value: &str) -> InsertCell {
     ic.set_col(col);
     ic.set_value(String::from(value));
     ic
+}
+
+fn insert_cell(
+    cell: &SpreadsheetCellObject,
+    selection_model: &SingleSelection,
+    client: &SpreadsheetApiClient,
+) {
+    let mut req = InsertCellsRequest::new();
+    let idx = cell.property_value("idx").get::<i32>().unwrap();
+    let cell_val = cell.property_value("value").get::<String>().unwrap();
+
+    let cells = vec![new_insert_cell(idx / NUM_COLS, idx % NUM_COLS, &cell_val)];
+    req.set_cells(RepeatedField::from_vec(cells));
+    let resp = client.insert_cells(&req);
+    match resp {
+        Ok(cells) => {
+            for cell in cells.cells {
+                println!("updating cell {:#?}", cell);
+                let model_idx = row_major_idx(cell.row, cell.col) as u32;
+                let (num_removed, num_added) = (0 as u32, 0 as u32);
+                let item = selection_model
+                    .item(model_idx)
+                    .expect("item needs to be a GObject");
+                println!(
+                    "updating item {:#?} with value {:#?} at ({:?}, {:?})",
+                    item, cell.display_value, cell.row, cell.col
+                );
+                item.set_property("displayvalue", cell.display_value);
+                selection_model
+                    .emit_by_name::<()>("items-changed", &[&model_idx, &num_removed, &num_added]);
+            }
+        }
+        Err(e) => println!("error inserting cells: {:?}", e),
+    }
 }
 
 fn main() {
