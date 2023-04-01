@@ -62,7 +62,7 @@ fn build_ui(application: &Application) {
     // Create a window
     let window = ApplicationWindow::builder()
         .application(application)
-        .title("My GTK App")
+        .title("Spreadsheet")
         .default_width(800)
         .default_height(650)
         .child(&gtk_box)
