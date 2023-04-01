@@ -22,7 +22,7 @@ use std::cmp::{max, min};
 use std::sync::Arc;
 
 const NUM_COLS: i32 = 36;
-const NUM_ROWS: i32 = 72;
+const NUM_ROWS: i32 = 150;
 
 fn build_ui(application: &Application) {
     let grpc_env = Arc::new(grpcio::Environment::new(1));
@@ -54,7 +54,7 @@ fn build_ui(application: &Application) {
 
     let scrolled_window = ScrolledWindow::builder()
         .min_content_width(340)
-        .min_content_height(600)
+        // .min_content_height(600)
         .child(&grid)
         .build();
     gtk_box.append(&scrolled_window);
@@ -178,7 +178,8 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
         .model(&selection_model)
         .max_columns(NUM_COLS as u32)
         .min_columns(NUM_COLS as u32)
-        .width_request(200)
+        .hexpand(true)
+        .vexpand(true)
         .build();
 
     let key_controller = EventControllerKey::builder().build();
