@@ -20,6 +20,13 @@ generate_js_protobuf:
 	export PATH="$$PATH:$$(pwd)/frontend"; cd frontend && protoc -I=../src/proto/grpc ../src/proto/grpc/api.proto --js_out=import_style=commonjs:spreadsheet-client/src --grpc-web_out=import_style=commonjs,mode=grpcwebtext:spreadsheet-client/src
 
 
+bundle:
+	cargo build --bin spreadsheet_server
+	cargo build --bin client_app
+	mkdir -p build
+	cp run.sh target/debug/spreadsheet_server target/debug/client_app build
+	chmod +x build/run.sh
+
 build-docker:
 	docker build . -t spreadsheet
 
