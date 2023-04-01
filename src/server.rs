@@ -112,14 +112,14 @@ fn main() {
     // for (host, port) in server.bind_addrs() {
     //     println!("listening on {}:{}", host, port);
     // }
-    let (tx, rx) = oneshot::channel();
-    thread::spawn(move || {
-        println!("Press ENTER to exit...");
-        let _ = io::stdin().read(&mut [0]).unwrap();
-        tx.send(()).unwrap();
-    });
+    let (tx, rx): (oneshot::Sender<()>, oneshot::Receiver<()>) = oneshot::channel();
+    // thread::spawn(move || {
+    //     println!("Press ENTER to exit...");
+    //     let _ = io::stdin().read(&mut [0]).unwrap();
+    //     tx.send(()).unwrap();
+    // });
     let _ = block_on(rx);
-    let _ = block_on(server.shutdown());
+    // let _ = block_on(server.shutdown());
 }
 
 fn insert_cells_to_models(insert_cells: &[api::InsertCell]) -> Vec<models::Cell> {
