@@ -227,6 +227,7 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
                         println!("No API available!")
                     }
                 }
+                selection_model.select_item(clamp_selection(selection_model.selected() as i32 + NUM_COLS) as u32, true);
             } else {
                 inhibit = false;
             }
