@@ -188,7 +188,7 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
             let mut inhibit = true;
             if key_code == 123 { // left arrow
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 - 1) as u32, true);
-            } else if key_code == 124 { // left arrow
+            } else if key_code == 124 || key_code == 48 { // right arrow or tab
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 + 1) as u32, true);
             } else if key_code == 125 { // down arrow
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 + NUM_COLS) as u32, true);
