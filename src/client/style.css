@@ -19,11 +19,6 @@ gridview child {
     border: 2px solid green;
 }
 
-.ss_cell:selected {
-    background-color: black;
-    border: 2px solid green;
-}
-
 box, entry {
     margin: 0px;
 }
@@ -39,4 +34,10 @@ entry.formula_bar {
 child {
     padding: 0px;
     outline-offset: 0px;
+}
+
+/* override GTK's default placeholder style */
+entry > text > placeholder, label.separator {
+  opacity: 1;
+  text-shadow: none;
 }
