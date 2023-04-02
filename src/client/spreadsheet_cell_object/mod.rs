@@ -1,5 +1,7 @@
 mod imp;
 
+use crate::NUM_COLS;
+use crate::NUM_ROWS;
 use glib::object::ObjectExt;
 use glib::Object;
 use glib_macros::clone;
@@ -9,8 +11,10 @@ use gtk::subclass::prelude::*;
 use gtk::{glib, Entry, EventControllerFocus, GestureClick, PropagationPhase, SingleSelection};
 use rpc_client::api;
 
-const NUM_COLS: i32 = 10;
-const NUM_ROWS: i32 = 20;
+const ALPHABET: [char; 27] = [
+    'A', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
+    'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+];
 
 glib::wrapper! {
     pub struct SpreadsheetCellObject(ObjectSubclass<imp::SpreadsheetCellObject>) @extends gtk::Widget, gtk::Box;
@@ -18,11 +22,17 @@ glib::wrapper! {
 
 impl SpreadsheetCellObject {
     pub fn new(idx: i32 /*, content: String*/) -> Self {
-        let obj = Object::builder()
+        let obj: SpreadsheetCellObject = Object::builder()
             .property("idx", idx)
             .property("value", &"")
             .property("displayvalue", &"")
             .build();
+        if idx == 0 {
+        } else if idx % NUM_COLS == 0 {
+            obj.set_property("displayvalue", (idx / NUM_COLS).to_string());
+        } else if idx / NUM_COLS == 0 {
+            obj.set_property("displayvalue", col_header_name(idx));
+        }
         obj
     }
     pub fn new_from_cell(cell: api::Cell) -> Self {
@@ -44,6 +54,13 @@ impl SpreadsheetCellObject {
             .flags(glib::BindingFlags::DEFAULT | glib::BindingFlags::SYNC_CREATE)
             .build();
 
+        let sensitive_binding = self
+            .bind_property("idx", &entry, "sensitive")
+            .transform_to(move |_, idx: i32| {
+                Some((idx / NUM_COLS != 0 && (idx % NUM_COLS as i32) != 0).to_value())
+            })
+            .flags(glib::BindingFlags::DEFAULT | glib::BindingFlags::SYNC_CREATE)
+            .build();
         // Save binding
         let click_gesture = GestureClick::new();
         click_gesture.set_propagation_phase(PropagationPhase::Capture);
@@ -128,4 +145,14 @@ pub struct SpreadsheetCell {
 
 fn row_major_idx(row: i32, col: i32) -> i32 {
     (row * NUM_COLS) + col
+}
+
+fn col_header_name(col_num: i32) -> String {
+    let mut tmp = col_num;
+    let mut new_val = String::from("");
+    while tmp != 0 {
+        new_val.push(ALPHABET[(tmp % 27) as usize]);
+        tmp = tmp / 27;
+    }
+    new_val.chars().rev().collect::<String>()
 }

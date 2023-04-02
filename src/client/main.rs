@@ -21,13 +21,17 @@ use std::sync::{Arc, RwLock};
 const NUM_COLS: i32 = 36;
 const NUM_ROWS: i32 = 150;
 
+const NUM_EDIT_COLS: i32 = NUM_COLS - 1;
+const NUM_EDIT_ROWS: i32 = NUM_ROWS - 1;
+
 fn build_ui(application: &Application) {
     // let grpc_env = Arc::new(grpcio::Environment::new(1));
     // let api_client = Arc::new(SpreadsheetApiClient::new(
     //     ChannelBuilder::new(grpc_env).connect(&String::from("0.0.0.0:9090")),
     // ));
     let ss_service = Arc::new(RwLock::new(service::MemoryCellsService::new(
-        NUM_ROWS, NUM_COLS,
+        NUM_EDIT_ROWS,
+        NUM_EDIT_COLS,
     )));
 
     let formula_bar = gtk::Entry::builder()
@@ -160,21 +164,23 @@ fn build_grid<T: service::CellsService + 'static>(
         }),
     );
 
-    factory.connect_bind(clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
-        let cell = list_item
-                .downcast_ref::<ListItem>()
-                .expect("Needs to be ListItem")
-                .item()
-                .and_downcast::<SpreadsheetCellObject>()
-                .expect("The child has to be an `SpreadsheetCellObject`.");
+    factory.connect_bind(
+        clone!(@weak formula_bar, @weak selection_model => move |_, list_item| {
+           let cell = list_item
+                   .downcast_ref::<ListItem>()
+                   .expect("Needs to be ListItem")
+                   .item()
+                   .and_downcast::<SpreadsheetCellObject>()
+                   .expect("The child has to be an `SpreadsheetCellObject`.");
 
-        let lst_item = list_item.downcast_ref::<ListItem>().expect("needs to be a ListItem");
-        if let Some(item) = lst_item.item() {
-            cell.set_property("displayvalue", item.property_value("displayvalue").get::<String>().expect("displayvalue needs to be a String").as_str());
-        }
-        cell.bind(&selection_model, &formula_bar);
-        lst_item.set_child(Some(&cell));
-     }));
+           let lst_item = list_item.downcast_ref::<ListItem>().expect("needs to be a ListItem");
+           let idx = cell.property_value("idx").get::<i32>().unwrap();
+           if let Some(item) = lst_item.item() {
+           }
+           cell.bind(&selection_model, &formula_bar);
+           lst_item.set_child(Some(&cell));
+        }),
+    );
 
     factory.connect_unbind(clone!(@weak selection_model => move |_, list_item| {
         let cell = list_item
@@ -253,6 +259,10 @@ fn row_major_idx(row: i32, col: i32) -> i32 {
     (row * NUM_COLS) + col
 }
 
+fn row_and_col(idx: i32, row_count: i32, col_count: i32) -> (i32, i32) {
+    (idx / col_count, idx / col_count)
+}
+
 fn clamp_selection(val: i32) -> i32 {
     min(max(val, 0), NUM_ROWS * NUM_COLS)
 }
@@ -260,9 +270,9 @@ fn clamp_selection(val: i32) -> i32 {
 fn get_all_cells<T: service::CellsService>(service: Arc<RwLock<T>>) -> Vec<models::Cell> {
     let get_rect = models::Rect {
         start_row: 0,
-        stop_row: NUM_ROWS,
+        stop_row: NUM_EDIT_ROWS,
         start_col: 0,
-        stop_col: NUM_COLS,
+        stop_col: NUM_EDIT_COLS,
     };
 
     service.write().unwrap().get_cells(get_rect)
@@ -273,18 +283,25 @@ fn insert_cell<T: service::CellsService>(
     selection_model: &SingleSelection,
     service: Arc<RwLock<T>>,
 ) {
-    let idx = cell.property_value("idx").get::<i32>().unwrap();
+    let idx = view_idx_to_ss_idx(cell.property_value("idx").get::<i32>().unwrap() as u32);
+    println!("insert idx {}", idx);
     let cell_val = cell.property_value("value").get::<String>().unwrap();
     if cell_val == "" {
         return;
     }
 
-    let cells = vec![models::Cell::new(idx / NUM_COLS, idx % NUM_COLS, cell_val)];
+    println!("{} / {} = {}", idx, NUM_EDIT_ROWS, idx / NUM_EDIT_ROWS);
+    let cells = vec![models::Cell::new(
+        idx / NUM_EDIT_COLS,
+        idx % NUM_EDIT_COLS,
+        cell_val,
+    )];
+    println!("inserting cells {:#?}", cells);
     let resp = service.write().unwrap().insert_cells(&cells);
     match resp {
         Ok(cells) => {
             for cell in cells {
-                let model_idx = row_major_idx(cell.row, cell.col) as u32;
+                let model_idx = ss_cell_to_model_idx(cell.row, cell.col);
                 let (num_removed, num_added) = (0 as u32, 0 as u32);
                 let item = selection_model
                     .item(model_idx)
@@ -295,6 +312,23 @@ fn insert_cell<T: service::CellsService>(
             }
         }
         Err(e) => println!("error inserting cells: {:?}", e),
+    }
+}
+
+fn view_idx_to_ss_idx(idx: u32) -> i32 {
+    let tmp = idx as i32;
+    tmp - (tmp / (NUM_EDIT_COLS)) - NUM_COLS
+}
+
+fn ss_cell_to_model_idx(row: i32, col: i32) -> u32 {
+    (row * NUM_COLS + col + NUM_COLS + 1) as u32
+}
+
+fn header_column_row_num(idx: i32) -> Option<i32> {
+    if idx % NUM_COLS == 0 {
+        Some(idx / NUM_COLS)
+    } else {
+        None
     }
 }
 
