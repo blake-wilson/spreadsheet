@@ -105,7 +105,6 @@ impl SpreadsheetCellObject {
     }
     pub fn connect(&self, selection_model: &SingleSelection, formula_bar: &Entry) {
         let entry = self.imp().entry.get();
-        let idx = self.property_value("idx").get::<i32>().unwrap();
         let value = self.property_value("value").get::<String>().unwrap();
         entry.connect_has_focus_notify(
             clone!(@weak entry, @weak selection_model, @weak formula_bar =>

@@ -3,11 +3,9 @@ mod spreadsheet_cell_object;
 mod ss_cell;
 
 use gdk::Display;
-use gdk::Key;
 use gdk4 as gdk;
 use gio::traits::ListModelExt;
 use glib_macros::clone;
-use grpcio::ChannelBuilder;
 use gtk::glib;
 use gtk::glib::GString;
 use gtk::prelude::BoxExt;
@@ -16,11 +14,8 @@ use gtk::{
     Application, ApplicationWindow, EventControllerKey, Inhibit, ListItem, PropagationPhase,
     ScrolledWindow, SignalListItemFactory, SingleSelection,
 };
-use protobuf::RepeatedField;
-use rpc_client::api::*;
 use spreadsheet_cell_object::SpreadsheetCellObject;
 use std::cmp::{max, min};
-use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
 const NUM_COLS: i32 = 36;
@@ -141,7 +136,7 @@ fn build_grid<T: service::CellsService + 'static>(
             cell.focus();
         }),
     );
-    let formula_changed = formula_bar.connect_changed(
+    formula_bar.connect_changed(
         clone!(@weak selection_model, @weak formula_bar => move |_| {
             let widget = selection_model.selected_item()
                 .unwrap();
@@ -207,7 +202,7 @@ fn build_grid<T: service::CellsService + 'static>(
     let key_controller = EventControllerKey::builder().build();
     key_controller.set_propagation_phase(PropagationPhase::Capture);
     key_controller.connect_key_pressed(
-        clone!(@weak selection_model => @default-return Inhibit(false), move |_, key_val, key_code, _| {
+        clone!(@weak selection_model => @default-return Inhibit(false), move |_, key_val, _, _| {
             if key_val.name().is_none() {
                 return Inhibit(false);
             }
@@ -263,7 +258,7 @@ fn clamp_selection(val: i32) -> i32 {
 }
 
 fn get_all_cells<T: service::CellsService>(service: Arc<RwLock<T>>) -> Vec<models::Cell> {
-    let mut get_rect = models::Rect {
+    let get_rect = models::Rect {
         start_row: 0,
         stop_row: NUM_ROWS,
         start_col: 0,
