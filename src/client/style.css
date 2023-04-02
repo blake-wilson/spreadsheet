@@ -4,6 +4,7 @@ gridview child {
 }
 
 .ss_cell {
+    border: 1px solid dark-grey;
     padding: 2px;
     margin: 0px;
     background-color: #fcf8eb;
@@ -12,7 +13,8 @@ gridview child {
 }
 
 .ss_cell:focus-within {
-    border: 2px solid green;
+    border: 1px solid green;
+    box-sizing: border-box;
 }
 
 .ss_cell_focused {

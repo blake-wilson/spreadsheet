@@ -2,13 +2,12 @@
 name = "spreadsheet"
 version = "0.1.0"
 edition = "2018"
-# build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 grpcio-sys = { version = "0.12.1" }
-grpcio = {  version = "0.12.1", features = ["openssl", "protobuf-codec"], default-features = false }
+grpcio = {  version = "0.12.1", features = ["openssl-vendored", "protobuf-codec"], default-features = false }
 futures = "0.3.14"
 protobuf = { version = "2.22.1" }
 pango = "0.17.4"

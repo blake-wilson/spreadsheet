@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="SpreadsheetCellObject" parent="GtkBox">
-    <property name="halign">center</property>
+    <property name="halign">fill</property>
     <property name="margin-top">0</property>
     <property name="margin-bottom">0</property>
     <property name="margin-start">0</property>
@@ -11,7 +11,7 @@
           <style>
             <class name="ss_cell" />
           </style>
-          <property name="halign">center</property>
+          <property name="halign">fill</property>
           <property name="margin-top">0</property>
           <property name="margin-bottom">0</property>
           <property name="margin-start">0</property>
