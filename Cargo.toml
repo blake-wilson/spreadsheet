@@ -35,6 +35,7 @@ glib-build-tools = "0.17"
 name = "spreadsheet_server"
 path = "src/server.rs"
 
+
 [[bin]]
 name = "client_app"
 path = "src/client/main.rs"
@@ -43,3 +44,7 @@ path = "src/client/main.rs"
 [[bin]]
 name = "rust-docker"
 path = "src/main.rs"
+
+[lib]
+name = "spreadsheet_service"
+path = "src/spreadsheet_service/lib.rs"
