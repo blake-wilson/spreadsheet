@@ -1,3 +1,4 @@
+use spreadsheet_service::{models, service};
 mod spreadsheet_cell_object;
 mod ss_cell;
 
@@ -16,19 +17,22 @@ use gtk::{
 };
 use protobuf::RepeatedField;
 use rpc_client::api::*;
-use rpc_client::api_grpc::SpreadsheetApiClient;
 use spreadsheet_cell_object::SpreadsheetCellObject;
 use std::cmp::{max, min};
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
 const NUM_COLS: i32 = 36;
 const NUM_ROWS: i32 = 150;
 
 fn build_ui(application: &Application) {
-    let grpc_env = Arc::new(grpcio::Environment::new(1));
-    let api_client = Arc::new(SpreadsheetApiClient::new(
-        ChannelBuilder::new(grpc_env).connect(&String::from("0.0.0.0:9090")),
-    ));
+    // let grpc_env = Arc::new(grpcio::Environment::new(1));
+    // let api_client = Arc::new(SpreadsheetApiClient::new(
+    //     ChannelBuilder::new(grpc_env).connect(&String::from("0.0.0.0:9090")),
+    // ));
+    let ss_service = Arc::new(RwLock::new(service::MemoryCellsService::new(
+        NUM_ROWS, NUM_COLS,
+    )));
 
     let formula_bar = gtk::Entry::builder()
         // .width_chars(100)
@@ -39,7 +43,7 @@ fn build_ui(application: &Application) {
         ))])
         .build();
 
-    let grid = build_grid(&formula_bar, api_client);
+    let grid = build_grid(&formula_bar, Arc::clone(&ss_service));
     grid.set_size_request(800, 600);
 
     let gtk_box = gtk::Box::builder()
@@ -73,23 +77,16 @@ fn build_ui(application: &Application) {
     formula_bar.grab_focus();
 }
 
-fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -> gtk::GridView {
-    let mut req = GetCellsRequest::new();
-    let mut get_rect = Rect::new();
-    get_rect.set_start_row(0);
-    get_rect.set_start_col(0);
-    get_rect.set_stop_col(NUM_COLS);
-    get_rect.set_stop_row(NUM_ROWS);
-    req.set_rect(get_rect);
-    let cells_resp = api_client
-        .get_cells(&req)
-        .expect("failed to get initial API response");
+fn build_grid<T: service::CellsService + 'static>(
+    formula_bar: &gtk::Entry,
+    service: Arc<RwLock<T>>,
+) -> gtk::GridView {
+    let cells = get_all_cells(Arc::clone(&service));
 
     let vector: Vec<SpreadsheetCellObject> = (0..(NUM_COLS * NUM_ROWS) as i32)
         .into_iter()
         .map(SpreadsheetCellObject::new)
         .collect();
-    let cells: Vec<rpc_client::api::Cell> = cells_resp.cells.to_vec();
     cells
         .into_iter()
         .map(|c| {
@@ -106,7 +103,6 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
         .for_each(drop);
     // Create new model
     let model = gio::ListStore::new(SpreadsheetCellObject::static_type());
-    // let model = ArcListModel::new();
     // Add the vector to the model
     model.extend_from_slice(&vector);
     let selection_model = SingleSelection::new(Some(model));
@@ -155,14 +151,14 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
         }),
     );
     formula_bar.connect_activate(
-        clone!(@weak formula_bar, @weak selection_model, @weak api_client => move |_| {
+        clone!(@weak formula_bar, @weak selection_model, @weak service => move |_| {
             let sel = selection_model.selected_item().unwrap();
             let idx = sel.property_value("idx").get::<i32>().unwrap();
             let item = selection_model.item(idx as u32).expect("item needs to be a GObject");
             let cell = sel.downcast::<SpreadsheetCellObject>().unwrap();
             let cell_val = formula_bar.text();
             item.set_property("value", cell_val.clone());
-            insert_cell(&cell, &selection_model, &api_client);
+            insert_cell(&cell, &selection_model, Arc::clone(&service));
 
             selection_model.select_item(clamp_selection(selection_model.selected() as i32 + NUM_COLS) as u32, true);
         }),
@@ -227,37 +223,11 @@ fn build_grid(formula_bar: &gtk::Entry, api_client: Arc<SpreadsheetApiClient>) -
                 let cell = sel.downcast::<SpreadsheetCellObject>().unwrap();
                 let cell_val = cell.entry_txt();
                 item.set_property("value", cell_val.clone());
-                let client = Arc::downgrade(&api_client);
-                println!("submitting formula at {}: {:#?}", idx, cell_val);
-                let mut req = InsertCellsRequest::new();
-                let cells = vec![new_insert_cell(idx / NUM_COLS, idx % NUM_COLS, &cell_val)];
-                req.set_cells(RepeatedField::from_vec(cells));
-                match client.upgrade() {
-                    Some(c) => {
-                        let resp = c.insert_cells(&req);
-                        match resp {
-                            Ok(cells) =>
-                                for cell in cells.cells {
-                                    println!("updating cell {:#?}", cell);
-                                    let model_idx = row_major_idx(cell.row, cell.col) as u32;
-                                    let (num_removed, num_added) = (0 as u32, 0 as u32);
-                                    let item = selection_model.item(model_idx).expect("item needs to be a GObject");
-                                    println!("updating item {:#?} with value {:#?} at ({:?}, {:?})", item, cell.display_value, cell.row, cell.col);
-                                    item.set_property("displayvalue", cell.display_value);
-                                    selection_model.emit_by_name::<()>("items-changed", &[&model_idx, &num_removed, &num_added]);
-                                }
-                            Err(e) => println!("error inserting cells: {:?}", e)
-                        }
-                    }
-                    None => {
-                        println!("No API available!")
-                    }
-                }
+                insert_cell(&cell, &selection_model, Arc::clone(&service));
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 + NUM_COLS) as u32, true);
             } else {
                 inhibit = false;
             }
-            println!("key code is {}, inhibit is {}", key_code, inhibit);
             Inhibit(inhibit)
         }),
     );
@@ -287,39 +257,38 @@ fn clamp_selection(val: i32) -> i32 {
     min(max(val, 0), NUM_ROWS * NUM_COLS)
 }
 
-fn new_insert_cell(row: i32, col: i32, value: &str) -> InsertCell {
-    let mut ic = InsertCell::new();
-    ic.set_row(row);
-    ic.set_col(col);
-    ic.set_value(String::from(value));
-    ic
+fn get_all_cells<T: service::CellsService>(service: Arc<RwLock<T>>) -> Vec<models::Cell> {
+    let mut get_rect = models::Rect {
+        start_row: 0,
+        stop_row: NUM_ROWS,
+        start_col: 0,
+        stop_col: NUM_COLS,
+    };
+
+    service.write().unwrap().get_cells(get_rect)
 }
 
-fn insert_cell(
+fn insert_cell<T: service::CellsService>(
     cell: &SpreadsheetCellObject,
     selection_model: &SingleSelection,
-    client: &SpreadsheetApiClient,
+    service: Arc<RwLock<T>>,
 ) {
-    let mut req = InsertCellsRequest::new();
     let idx = cell.property_value("idx").get::<i32>().unwrap();
     let cell_val = cell.property_value("value").get::<String>().unwrap();
+    if cell_val == "" {
+        return;
+    }
 
-    let cells = vec![new_insert_cell(idx / NUM_COLS, idx % NUM_COLS, &cell_val)];
-    req.set_cells(RepeatedField::from_vec(cells));
-    let resp = client.insert_cells(&req);
+    let cells = vec![models::Cell::new(idx / NUM_COLS, idx % NUM_COLS, cell_val)];
+    let resp = service.write().unwrap().insert_cells(&cells);
     match resp {
         Ok(cells) => {
-            for cell in cells.cells {
-                println!("updating cell {:#?}", cell);
+            for cell in cells {
                 let model_idx = row_major_idx(cell.row, cell.col) as u32;
                 let (num_removed, num_added) = (0 as u32, 0 as u32);
                 let item = selection_model
                     .item(model_idx)
                     .expect("item needs to be a GObject");
-                println!(
-                    "updating item {:#?} with value {:#?} at ({:?}, {:?})",
-                    item, cell.display_value, cell.row, cell.col
-                );
                 item.set_property("displayvalue", cell.display_value);
                 selection_model
                     .emit_by_name::<()>("items-changed", &[&model_idx, &num_removed, &num_added]);

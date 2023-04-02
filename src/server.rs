@@ -1,6 +1,4 @@
-mod models;
-mod parser;
-mod service;
+use spreadsheet_service::{modeler, parser, service};
 
 use futures::channel::oneshot;
 use futures::executor::block_on;
@@ -32,13 +30,11 @@ impl SpreadsheetService {
     }
 }
 
-impl api_grpc::SpreadsheetApi for SpreadsheetService {
+impl SpreadsheetService {
     fn insert_cells(
         &mut self,
-        ctx: RpcContext<'_>,
         req: api::InsertCellsRequest,
-        sink: UnarySink<api::InsertCellsResponse>,
-    ) {
+    ) -> Result<api::InsertCellsResponse, ()> {
         let insert_res: Result<Vec<models::Cell>, parser::Error>;
         {
             let cells = insert_cells_to_models(req.get_cells());
@@ -55,22 +51,16 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
                 resp.set_cells(protobuf::RepeatedField::from_vec(model_cells_to_api(
                     inserted_cells,
                 )));
+                Ok(resp)
             }
-            Err(e) => println!("error inserting cells: {:?}", e),
+            Err(e) => {
+                println!("error inserting cells: {:?}", e);
+                Err(())
+            }
         }
-        let f = sink
-            .success(resp)
-            .map_err(move |e| println!("failed to reply {:?}: {:?}", req, e))
-            .map(|_| ());
-        ctx.spawn(f);
     }
 
-    fn get_cells(
-        &mut self,
-        ctx: RpcContext<'_>,
-        req: api::GetCellsRequest,
-        sink: UnarySink<api::GetCellsResponse>,
-    ) {
+    fn get_cells(&mut self, req: api::GetCellsRequest) -> Result<api::GetCellsResponse, ()> {
         let rect = api_rect_to_model(req.get_rect());
         let cells: Vec<models::Cell>;
         {
@@ -81,10 +71,35 @@ impl api_grpc::SpreadsheetApi for SpreadsheetService {
         }
         let mut resp = api::GetCellsResponse::default();
         resp.set_cells(protobuf::RepeatedField::from_vec(model_cells_to_api(cells)));
+        Ok(resp)
+    }
+}
 
+impl api_grpc::SpreadsheetApi for SpreadsheetService {
+    fn insert_cells(
+        &mut self,
+        ctx: RpcContext<'_>,
+        req: api::InsertCellsRequest,
+        sink: UnarySink<api::InsertCellsResponse>,
+    ) {
+        let resp = SpreadsheetService::insert_cells(self, req).unwrap();
         let f = sink
             .success(resp)
-            .map_err(move |e| println!("failed to reply {:?}: {:?}", req, e))
+            .map_err(move |e| println!("failed to reply: {:?}", e))
+            .map(|_| ());
+        ctx.spawn(f);
+    }
+
+    fn get_cells(
+        &mut self,
+        ctx: RpcContext<'_>,
+        req: api::GetCellsRequest,
+        sink: UnarySink<api::GetCellsResponse>,
+    ) {
+        let resp = SpreadsheetService::get_cells(self, req).unwrap();
+        let f = sink
+            .success(resp)
+            .map_err(move |e| println!("failed to reply: {:?}", e))
             .map(|_| ());
         ctx.spawn(f);
     }

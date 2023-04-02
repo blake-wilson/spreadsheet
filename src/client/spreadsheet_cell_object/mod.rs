@@ -56,22 +56,15 @@ impl SpreadsheetCellObject {
         let focus_controller = EventControllerFocus::new();
         focus_controller.set_propagation_phase(PropagationPhase::Target);
         focus_controller.connect_leave(clone!(@weak self as this, @weak entry => move |_| {
-            println!("clearing entry text");
             entry.set_text("");
         }));
         focus_controller.connect_enter(
             clone!(@weak self as this, @weak entry, @weak formula_bar => move |_| {
-                println!("idx is {}", this.property_value("idx").get::<i32>().unwrap());
                 let val = this.property_value("value").get::<String>().unwrap();
                 entry.set_text(&val);
                 formula_bar.set_text(&val);
-                println!("setting entry text to {}", val);
             }),
         );
-        // if let Some(ctrl) = self.imp().gesture_handler.take() {
-        //     println!("adding controller: {:#?}", ctrl);
-        //     self.add_controller(self.imp().gesture_handler.clone());
-        // }
         clone!(@strong click_gesture => move || {
             self.add_controller(click_gesture);
         })();
