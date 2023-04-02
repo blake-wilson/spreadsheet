@@ -3,6 +3,7 @@ mod spreadsheet_cell_object;
 mod ss_cell;
 
 use gdk::Display;
+use gdk::Key;
 use gdk4 as gdk;
 use gio::traits::ListModelExt;
 use glib_macros::clone;
@@ -206,17 +207,21 @@ fn build_grid<T: service::CellsService + 'static>(
     let key_controller = EventControllerKey::builder().build();
     key_controller.set_propagation_phase(PropagationPhase::Capture);
     key_controller.connect_key_pressed(
-        clone!(@weak selection_model => @default-return Inhibit(false), move |_, _, key_code, _| {
+        clone!(@weak selection_model => @default-return Inhibit(false), move |_, key_val, key_code, _| {
+            if key_val.name().is_none() {
+                return Inhibit(false);
+            }
+            let name = key_val.name().unwrap();
             let mut inhibit = true;
-            if key_code == 123 { // left arrow
+            if name == "Left" {
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 - 1) as u32, true);
-            } else if key_code == 124 || key_code == 48 { // right arrow or tab
+            } else if name == "Right" || name == "Tab"{
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 + 1) as u32, true);
-            } else if key_code == 125 { // down arrow
+            } else if name == "Down" {
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 + NUM_COLS) as u32, true);
-            } else if key_code == 126 { // up arrow
+            } else if name == "Up" {
                 selection_model.select_item(clamp_selection(selection_model.selected() as i32 - NUM_COLS) as u32, true);
-            } else if key_code == 36 { // ENTER
+            } else if name == "Return" { // ENTER
                 let sel = selection_model.selected_item().unwrap();
                 let idx = sel.property_value("idx").get::<i32>().unwrap();
                 let item = selection_model.item(idx as u32).expect("item needs to be a GObject");
