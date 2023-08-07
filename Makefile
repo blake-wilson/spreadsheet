@@ -21,11 +21,15 @@ generate_js_protobuf:
 
 
 bundle:
-	cargo build --bin spreadsheet_server
 	cargo build --bin client_app
 	mkdir -p build
-	cp run.sh target/debug/spreadsheet_server target/debug/client_app build
-	chmod +x build/run.sh
+	cp target/debug/client_app build
+
+bundle-windows:
+	cargo build --bin client_app
+	mkdir -p build
+	cp  /mingw64/bin/*.dll build
+	cp target/debug/client_app build
 
 build-docker:
 	docker build . -t spreadsheet
