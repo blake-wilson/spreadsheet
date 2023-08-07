@@ -460,9 +460,9 @@ fn col_letters_to_num(letters: &str) -> i32 {
     let mut total: i32 = 0;
     let mut mult = 1;
 
-    for c in upper.chars() {
-        total += ((c as i32) - 65) * mult;
-        mult += 1;
+    for c in upper.chars().rev() {
+        total += ((c as i32) - 64) * mult;
+        mult *= 26;
     }
-    total
+    total - 1
 }

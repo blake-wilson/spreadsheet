@@ -11,9 +11,9 @@ use gtk::subclass::prelude::*;
 use gtk::{glib, Entry, EventControllerFocus, GestureClick, PropagationPhase, SingleSelection};
 use rpc_client::api;
 
-const ALPHABET: [char; 27] = [
-    'A', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
-    'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+const ALPHABET: [char; 26] = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+    'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
 ];
 
 glib::wrapper! {
@@ -148,11 +148,16 @@ fn row_major_idx(row: i32, col: i32) -> i32 {
 }
 
 fn col_header_name(col_num: i32) -> String {
-    let mut tmp = col_num;
+    let mut tmp = col_num - 1;
     let mut new_val = String::from("");
-    while tmp != 0 {
-        new_val.push(ALPHABET[(tmp % 27) as usize]);
-        tmp = tmp / 27;
+    loop {
+        let rem = tmp % 26;
+        new_val.push(ALPHABET[rem as usize]);
+        tmp /= 26;
+        if tmp == 0 {
+            break;
+        };
+        tmp -= 1;
     }
     new_val.chars().rev().collect::<String>()
 }

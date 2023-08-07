@@ -316,8 +316,10 @@ fn insert_cell<T: service::CellsService>(
 }
 
 fn view_idx_to_ss_idx(idx: u32) -> i32 {
-    let tmp = idx as i32;
-    tmp - (tmp / (NUM_EDIT_COLS)) - NUM_COLS
+    let row = idx / NUM_COLS as u32;
+    let col = idx % NUM_COLS as u32;
+
+    (row * NUM_EDIT_COLS as u32 + col - NUM_COLS as u32) as i32
 }
 
 fn ss_cell_to_model_idx(row: i32, col: i32) -> u32 {
