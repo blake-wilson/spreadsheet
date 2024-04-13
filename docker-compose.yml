@@ -5,6 +5,7 @@ services:
         stdin_open: true
         ports:
             - "9090:9090"
+        restart: always
     envoy:
         image: "envoyproxy/envoy:v1.17.1"
         volumes:
