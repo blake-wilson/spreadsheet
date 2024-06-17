@@ -4,11 +4,11 @@ mod ss_cell;
 
 use gdk::Display;
 use gdk4 as gdk;
-use gio::traits::ListModelExt;
 use glib_macros::clone;
 use gtk::glib;
 use gtk::glib::GString;
 use gtk::prelude::BoxExt;
+use gtk::prelude::ListModelExt;
 use gtk::prelude::*;
 use gtk::{
     Application, ApplicationWindow, EventControllerKey, Inhibit, ListItem, PropagationPhase,
