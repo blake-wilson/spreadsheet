@@ -156,7 +156,6 @@ fn evaluate_internal(
         ASTNode::Number(n) => EvalResult::Numeric(n),
         ASTNode::Text(t) => EvalResult::NonNumeric(t),
         ASTNode::BinaryExpr { op, lhs, rhs } => {
-            println!("evaluating binary expression: {:?} {:?} {:?}", op, lhs, rhs);
             match (
                 evaluate_internal(*lhs, path, ctx),
                 evaluate_internal(*rhs, path, ctx),
@@ -235,10 +234,8 @@ pub fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
     if tokens.len() == 0 {
         return Ok(ASTNode::Empty);
     }
-    print!("parse_internal: tokens are {:?}", tokens);
     let mut tree = ASTNode::Empty;
     while tokens.len() > 0 {
-        println!("parsing tokens {:?}", tokens);
         let fst = tokens.get(0).unwrap().clone();
         if fst.kind != TokenKind::Comma {
             tokens.remove(0);
@@ -259,13 +256,11 @@ pub fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
             },
             x => Err(Error::new(&format!("unrecognized token kind {:?}", x))),
         }?;
-        println!("tokens are now {:?}", tokens);
     }
     Ok(tree)
 }
 
 pub fn parse_number(parent: &ASTNode, curr: &Token, tokens: &[Token]) -> Result<ASTNode, Error> {
-    println!("parsing number: {:?} {:?}", curr, tokens);
     match parent {
         ASTNode::Empty => Ok(ASTNode::BinaryExpr {
             op: Operator::Null,
@@ -409,7 +404,6 @@ pub fn parse_function(
     tokens: &mut Vec<Token>,
 ) -> Result<ASTNode, Error> {
     let next = tokens.get(0).unwrap();
-    println!("parse_function tokens {:?}", tokens);
 
     if next.kind != TokenKind::LParen {
         return Err(Error::new(&format!(
@@ -468,9 +462,7 @@ pub fn parse_function(
 }
 
 pub fn parse_function_argument(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
-    println!("parsing function argument\n\n");
     let arg = parse_internal(tokens)?;
-    println!("function argument is {:?}", arg);
     Ok(arg)
 }
 
