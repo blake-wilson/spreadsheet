@@ -4,21 +4,22 @@ use super::super::models::EvalContext;
 use super::functions::*;
 use super::lexer::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Operator {
     Add,
     Subtract,
     Multiply,
     Divide,
+    Null,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct CellRef {
     pub col: i32,
     pub row: i32,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Error {
     error_text: String,
 }
@@ -58,7 +59,7 @@ impl CellRef {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ASTNode {
     Empty,
     Number(f64),
@@ -155,6 +156,7 @@ fn evaluate_internal(
         ASTNode::Number(n) => EvalResult::Numeric(n),
         ASTNode::Text(t) => EvalResult::NonNumeric(t),
         ASTNode::BinaryExpr { op, lhs, rhs } => {
+            println!("evaluating binary expression: {:?} {:?} {:?}", op, lhs, rhs);
             match (
                 evaluate_internal(*lhs, path, ctx),
                 evaluate_internal(*rhs, path, ctx),
@@ -166,6 +168,7 @@ fn evaluate_internal(
                     Operator::Subtract => sub(vec![l, r]),
                     Operator::Multiply => mult(vec![l, r]),
                     Operator::Divide => div(vec![l, r]),
+                    Operator::Null => l,
                 },
             }
         }
@@ -232,63 +235,132 @@ pub fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
     if tokens.len() == 0 {
         return Ok(ASTNode::Empty);
     }
-    let fst = tokens.remove(0);
-    match fst.kind {
-        TokenKind::Number => parse_number(&fst, tokens),
-        TokenKind::Text => Ok(ASTNode::Text(fst.val)),
-        TokenKind::LParen => parse_paren_expr(tokens),
-        TokenKind::ID => match tokens.get(0) {
-            Some(token) => match token.kind {
-                TokenKind::LParen => parse_function(&fst, tokens),
-                _ => parse_cell_ref_or_range(&fst, tokens),
+    print!("parse_internal: tokens are {:?}", tokens);
+    let mut tree = ASTNode::Empty;
+    while tokens.len() > 0 {
+        println!("parsing tokens {:?}", tokens);
+        let fst = tokens.get(0).unwrap().clone();
+        if fst.kind != TokenKind::Comma {
+            tokens.remove(0);
+        }
+        tree = match fst.kind {
+            TokenKind::Number => parse_number(&tree, &fst, tokens),
+            TokenKind::Text => Ok(ASTNode::Text(fst.val)),
+            TokenKind::BinaryExpr => parse_binary_expr(&tree, &fst),
+            TokenKind::LParen => parse_paren_expr(&tree, tokens),
+            TokenKind::RParen => return Ok(tree),
+            TokenKind::Comma => return Ok(tree),
+            TokenKind::ID => match tokens.get(0) {
+                Some(token) => match token.kind {
+                    TokenKind::LParen => parse_function(&tree, &fst, tokens),
+                    _ => parse_cell_ref_or_range(&fst, tokens),
+                },
+                None => parse_cell_ref_or_range(&fst, tokens),
             },
-            None => parse_cell_ref_or_range(&fst, tokens),
-        },
-        x => Err(Error::new(&format!("unrecognized token kind {:?}", x))),
+            x => Err(Error::new(&format!("unrecognized token kind {:?}", x))),
+        }?;
+        println!("tokens are now {:?}", tokens);
     }
+    Ok(tree)
 }
 
-pub fn parse_number(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+pub fn parse_number(parent: &ASTNode, curr: &Token, tokens: &[Token]) -> Result<ASTNode, Error> {
     println!("parsing number: {:?} {:?}", curr, tokens);
-    let num_node = ASTNode::Number(curr.val.parse::<f64>().unwrap());
-    if tokens.len() == 0 {
-        return Ok(num_node);
-    }
-    let next = tokens.get(0).unwrap().clone();
-    match next.kind {
-        TokenKind::BinaryExpr => return parse_binary_expr(num_node, &next, tokens),
-        _ => Ok(num_node),
+    match parent {
+        ASTNode::Empty => Ok(ASTNode::BinaryExpr {
+            op: Operator::Null,
+            lhs: Box::new(ASTNode::Number(curr.val.parse::<f64>().unwrap())),
+            rhs: Box::new(ASTNode::Empty),
+        }),
+        ASTNode::BinaryExpr { op, lhs, rhs } => match **lhs {
+            ASTNode::Empty => Ok(ASTNode::BinaryExpr {
+                op: op.clone(),
+                lhs: Box::new(ASTNode::Number(curr.val.parse::<f64>().unwrap())),
+                rhs: Box::new(ASTNode::Empty),
+            }),
+            _ => Ok(ASTNode::BinaryExpr {
+                op: *op,
+                lhs: lhs.clone(),
+                rhs: Box::new(ASTNode::Number(curr.val.parse::<f64>().unwrap())),
+            }),
+        },
+        x => Err(Error::new(&format!(
+            "unexpected parent node type for number: {:?}",
+            x
+        ))),
     }
 }
 
-pub fn parse_paren_expr(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+pub fn parse_paren_expr(tree: &ASTNode, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
     let node = parse_internal(tokens)?;
-    if tokens.len() == 0 {
-        return Err(Error::new("unexpected end of paren expression"));
-    }
-    let next = tokens.remove(0);
-    if next.kind != TokenKind::RParen {
-        return Err(Error::new("No matching ')' found for '('"));
-    }
-    if tokens.len() == 0 {
-        return Ok(node);
-    }
-    let next = tokens.get(0).unwrap().clone();
-    match next.kind {
-        TokenKind::BinaryExpr => parse_binary_expr(node, &next, tokens),
-        _ => Ok(node),
+
+    match tree {
+        ASTNode::Empty => Ok(node.clone()),
+        ASTNode::BinaryExpr { op, lhs, rhs } => Ok(match node {
+            ASTNode::BinaryExpr {
+                op,
+                lhs: ref n_lhs,
+                rhs: ref rhs,
+            } => match op {
+                Operator::Null => match **n_lhs {
+                    ASTNode::Number(n) => ASTNode::BinaryExpr {
+                        op: op.clone(),
+                        lhs: lhs.clone(),
+                        rhs: n_lhs.clone(),
+                    },
+                    _ => ASTNode::BinaryExpr {
+                        op: op.clone(),
+                        lhs: lhs.clone(),
+                        rhs: Box::new(node.clone()),
+                    },
+                },
+                _ => ASTNode::BinaryExpr {
+                    op: op.clone(),
+                    lhs: lhs.clone(),
+                    rhs: Box::new(node.clone()),
+                },
+            },
+            _ => ASTNode::BinaryExpr {
+                op: op.clone(),
+                lhs: Box::new(tree.clone()),
+                rhs: Box::new(node.clone()),
+            },
+        }),
+        _ => Err(Error::new(
+            "unexpected node before parenthesized expression",
+        )),
     }
 }
 
-fn parse_binary_expr(lhs: ASTNode, op: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+fn parse_binary_expr(tree: &ASTNode, op: &Token) -> Result<ASTNode, Error> {
     let val = op.val.clone();
-    tokens.remove(0);
-    let rhs = parse_internal(tokens)?;
-    Ok(ASTNode::BinaryExpr {
-        op: get_operator(&val)?,
-        lhs: Box::new(lhs),
-        rhs: Box::new(rhs),
-    })
+    match tree {
+        ASTNode::Empty => Err(Error::new("No tree found for binary op")),
+        ASTNode::BinaryExpr { op, lhs, rhs } => match op {
+            Operator::Null => Ok(ASTNode::BinaryExpr {
+                op: get_operator(&val)?,
+                lhs: lhs.clone(),
+                rhs: rhs.clone(),
+            }),
+            // operator exists. Need to create a new parent for the tree. Assign the current tree
+            // to this tree's left subtree
+            _ => Ok(ASTNode::BinaryExpr {
+                op: get_operator(&val)?,
+                lhs: Box::new(tree.clone()),
+                rhs: Box::new(ASTNode::Empty),
+            }),
+        },
+        x => Err(Error::new(&format!(
+            "unexpected tree node type for binary expression: {:?}",
+            x
+        ))),
+    }
+
+    // Ok(ASTNode::BinaryExpr {
+    //     op: get_operator(&val)?,
+    //     lhs: Box::new(lhs),
+    //     rhs: Box::new(rhs),
+    // })
 }
 
 pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
@@ -326,13 +398,18 @@ pub fn parse_cell_ref_or_range(curr: &Token, tokens: &mut Vec<Token>) -> Result<
     }
     let next = tokens.get(0).unwrap().clone();
     match next.kind {
-        TokenKind::BinaryExpr => return parse_binary_expr(cell_ref, &next, tokens),
+        TokenKind::BinaryExpr => return parse_binary_expr(&cell_ref.clone(), &next),
         _ => Ok(cell_ref),
     }
 }
 
-pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+pub fn parse_function(
+    tree: &ASTNode,
+    curr: &Token,
+    tokens: &mut Vec<Token>,
+) -> Result<ASTNode, Error> {
     let next = tokens.get(0).unwrap();
+    println!("parse_function tokens {:?}", tokens);
 
     if next.kind != TokenKind::LParen {
         return Err(Error::new(&format!(
@@ -346,9 +423,7 @@ pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, 
     loop {
         args.push(Box::new(parse_function_argument(tokens)?));
         if tokens.get(0).is_none() {
-            return Err(Error::new(
-                "Unexpected end of input after function argument",
-            ));
+            break;
         }
         let next = tokens.get(0).unwrap();
         if next.kind != TokenKind::Comma {
@@ -356,34 +431,47 @@ pub fn parse_function(curr: &Token, tokens: &mut Vec<Token>) -> Result<ASTNode, 
         }
         tokens.remove(0);
     }
-    if tokens.get(0).is_none() || tokens.get(0).unwrap().kind != TokenKind::RParen {
-        return Err(Error::new(&format!(
-            "No closing parentheses in function arguments",
-        )));
-    }
-    tokens.remove(0);
+    // if tokens.get(0).is_none() || tokens.get(0).unwrap().kind != TokenKind::RParen {
+    //     return Err(Error::new(&format!(
+    //         "No closing parentheses in function arguments",
+    //     )));
+    // }
+    // tokens.remove(0);
 
-    Ok(ASTNode::Function {
+    let funcNode = ASTNode::Function {
         name: curr.val.clone(),
         args,
-    })
+    };
+    match tree {
+        ASTNode::Empty => Ok(ASTNode::BinaryExpr {
+            op: Operator::Null,
+            lhs: Box::new(funcNode),
+            rhs: Box::new(ASTNode::Empty),
+        }),
+        ASTNode::BinaryExpr { op, lhs, rhs } => match **lhs {
+            ASTNode::Empty => Ok(ASTNode::BinaryExpr {
+                op: Operator::Null,
+                lhs: Box::new(funcNode),
+                rhs: Box::new(ASTNode::Empty),
+            }),
+            _ => Ok(ASTNode::BinaryExpr {
+                op: Operator::Null,
+                lhs: lhs.clone(),
+                rhs: rhs.clone(),
+            }),
+        },
+        x => Err(Error::new(&format!(
+            "unexpected parent node type for function node: {:?}",
+            x
+        ))),
+    }
 }
 
 pub fn parse_function_argument(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
+    println!("parsing function argument\n\n");
     let arg = parse_internal(tokens)?;
-    match tokens.get(0) {
-        Some(token) => {
-            if token.kind != TokenKind::RParen && token.kind != TokenKind::Comma {
-                return Err(Error::new(
-                    "expected comma or right paren after function arg",
-                ));
-            }
-            Ok(arg)
-        }
-        None => Err(Error::new(
-            "Expected token following argument but found none",
-        )),
-    }
+    println!("function argument is {:?}", arg);
+    Ok(arg)
 }
 
 pub fn get_operator(val: &str) -> Result<Operator, Error> {
