@@ -3,6 +3,7 @@ use super::super::models::CellRange;
 use super::super::models::EvalContext;
 use super::functions::*;
 use super::lexer::*;
+use std::cmp;
 
 enum Precedence {
     PlusMinus = 2,
@@ -228,7 +229,7 @@ fn evaluate_internal(
             if stop.is_unbounded() {
                 stop.row = ctx.num_rows() - 1;
             }
-            for i in start.row..stop.row + 1 {
+            for i in cmp::max(start.row, 0)..stop.row + 1 {
                 for j in start.col..stop.col + 1 {
                     match ctx.get_cell(i, j) {
                         Some(_) => {
