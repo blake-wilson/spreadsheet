@@ -1,22 +1,16 @@
+use super::parser::ASTNode;
 use std::iter::Peekable;
 use std::vec::Vec;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum TokenKind {
-    LParen,
-    RParen,
-    Colon,
-    Number,
-    BinaryExpr,
-    Comma,
-    Text,
-    ID,
-}
-
 #[derive(Debug, Clone, PartialEq)]
-pub struct Token {
-    pub kind: TokenKind,
-    pub val: String,
+pub enum Token {
+    Colon,
+    Number(String),
+    Op(char),
+    Comma,
+    Text(String),
+    ID(String),
+    Eof,
 }
 
 pub fn lex(input: &str) -> Result<Vec<Token>, &'static str> {
@@ -33,17 +27,11 @@ pub fn lex(input: &str) -> Result<Vec<Token>, &'static str> {
             }
             '(' => {
                 it.next();
-                Ok(Token {
-                    kind: TokenKind::LParen,
-                    val: "(".to_string(),
-                })
+                Ok(Token::Op('('))
             }
             ')' => {
                 it.next();
-                Ok(Token {
-                    kind: TokenKind::RParen,
-                    val: ")".to_string(),
-                })
+                Ok(Token::Op(')'))
             }
             '"' => {
                 it.next();
@@ -54,17 +42,11 @@ pub fn lex(input: &str) -> Result<Vec<Token>, &'static str> {
                     }
                     str_val.push(c);
                 }
-                Ok(Token {
-                    kind: TokenKind::Text,
-                    val: str_val,
-                })
+                Ok(Token::Text(str_val))
             }
             ':' => {
                 it.next();
-                Ok(Token {
-                    kind: TokenKind::Colon,
-                    val: ":".to_string(),
-                })
+                Ok(Token::Colon)
             }
             ' ' => {
                 it.next();
@@ -72,17 +54,11 @@ pub fn lex(input: &str) -> Result<Vec<Token>, &'static str> {
             }
             ',' => {
                 it.next();
-                Ok(Token {
-                    kind: TokenKind::Comma,
-                    val: c.to_string(),
-                })
+                Ok(Token::Comma)
             }
             '*' | '+' | '-' | '/' => {
                 it.next();
-                Ok(Token {
-                    kind: TokenKind::BinaryExpr,
-                    val: c.to_string(),
-                })
+                Ok(Token::Op(c))
             }
             'A'..='z' => {
                 let id = lex_id(&mut it);
@@ -95,6 +71,7 @@ pub fn lex(input: &str) -> Result<Vec<Token>, &'static str> {
             Err(e) => return Err(e),
         }
     }
+    result.push(Token::Eof);
     println!("lexed tokens: {:?}", result);
     Ok(result)
 }
@@ -108,10 +85,7 @@ where
     while let Some(Ok(_)) = input.peek().map(|c| c.to_string().parse::<u8>()) {
         val.push(input.next().unwrap());
     }
-    Ok(Token {
-        kind: TokenKind::Number,
-        val,
-    })
+    Ok(Token::Number(val))
 }
 
 fn lex_id<I>(input: &mut Peekable<I>) -> Token
@@ -127,10 +101,7 @@ where
         input.next();
     }
 
-    Token {
-        kind: TokenKind::ID,
-        val,
-    }
+    Token::ID(val.to_string())
 }
 
 pub fn is_id_char(c: char) -> bool {

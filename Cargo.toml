@@ -42,7 +42,7 @@ path = "src/client/main.rs"
 # target to build Docker image with
 [[bin]]
 name = "rust-docker"
-path = "src/main.rs"
+path = "src/server.rs"
 
 [lib]
 name = "spreadsheet_service"
