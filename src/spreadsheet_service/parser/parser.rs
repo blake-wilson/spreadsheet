@@ -333,29 +333,29 @@ pub fn pratt_parse(tokens: &mut Vec<Token>, mbp: u8) -> Result<ASTNode, Error> {
     println!("parsing tokens {:?}", tokens);
     let mut lhs = match advance(tokens) {
         Token::Op('(') => {
-            let lhs = pratt_parse(tokens, 0)?;
-            assert_eq!(advance(tokens), Token::Op(')'));
+            let lhs = pratt_parse(tokens, 0);
+            // assert_eq!(advance(tokens), Token::Op(')'));
             lhs
         }
         Token::Op(c) => {
             let op = get_operator(&c.to_string())?;
             let (_, r_bp) = prefix_binding_power(c);
             let rhs = pratt_parse(tokens, r_bp)?;
-            ASTNode::UnaryExpr {
+            Ok(ASTNode::UnaryExpr {
                 op,
                 operand: Box::new(rhs.clone()),
-            }
+            })
         }
         Token::Number(txt) => match txt.parse::<f64>() {
             Ok(num) => Ok(ASTNode::Number(num)),
-            Err(e) => Err(Error::new(&format!(
+            Err(_) => Err(Error::new(&format!(
                 "Could not parse value {:?} as number",
                 txt
             ))),
-        }?,
-        Token::ID(id) => parse_cell_or_function(id, tokens)?,
-        t => panic!("unexpected token {:?}", t),
-    };
+        },
+        Token::ID(id) => parse_cell_or_function(id, tokens),
+        t => Err(Error::new(&format!("unexpected token {:?}", t))),
+    }?;
     loop {
         let op = match peek(tokens) {
             Token::Eof | Token::Comma => break,

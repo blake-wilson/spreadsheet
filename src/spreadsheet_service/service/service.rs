@@ -83,10 +83,19 @@ impl CellsService for MemoryCellsService {
                     println!("circular cell\n");
                     let display_value = "#CIRCULAR!".to_owned();
                     let mut eval_cell = self.get_cell(c.row, c.col).unwrap().clone();
-                    eval_cell.display_value = display_value;
+                    if eval_cell.is_formula() {
+                        eval_cell.display_value = display_value;
+                    }
                     self.set_cell(&eval_cell);
                     ret_cells.push(eval_cell);
                 }
+                if !cc.is_formula() {
+                    cc.display_value = cc.value.clone();
+                } else {
+                    cc.display_value = "#CIRCULAR!".to_owned();
+                }
+                self.set_cell(&cc);
+                ret_cells.push(cc);
             }
         }
         Ok(ret_cells)
