@@ -57,7 +57,7 @@ impl CellsService for MemoryCellsService {
             let mut cc = self.get_cell(c.row, c.col).unwrap();
 
             // Update the formula graph and recompute necessary cells
-            let formula = parser::parse(&cc.value)?;
+            let formula = parser::parse(&cc.value);
             let mut refs = parser::get_refs(&formula);
             refs.iter_mut().for_each(|r| (*r).clamp(self.num_rows));
             let mut insert_res = self.formula_graph.insert_cell(cc.clone(), refs);
@@ -66,7 +66,7 @@ impl CellsService for MemoryCellsService {
                     // We don't need to check refs again here since the formula graph already computed
                     // all the required re-evals.
                     let mut eval_cell = self.get_cell(c.row, c.col).unwrap().clone();
-                    let formula = parser::parse(&eval_cell.value)?;
+                    let formula = parser::parse(&eval_cell.value);
                     let display_value = parser::evaluate(formula, self);
                     eval_cell.display_value = display_value;
                     self.set_cell(&eval_cell);

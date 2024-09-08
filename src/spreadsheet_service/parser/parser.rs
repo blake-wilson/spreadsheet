@@ -90,6 +90,7 @@ pub enum ASTNode {
         start: CellRef,
         stop: CellRef,
     },
+    ParseError(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -101,7 +102,7 @@ pub enum EvalResult {
     Error(String),
 }
 
-pub fn parse(input: &str) -> Result<ASTNode, Error> {
+pub fn parse(input: &str) -> ASTNode {
     if input.starts_with('=') {
         let cell_value = input.strip_prefix('=').unwrap().to_string();
         let tokens = super::lexer::lex(&cell_value);
@@ -111,13 +112,13 @@ pub fn parse(input: &str) -> Result<ASTNode, Error> {
                 return parse_internal(&mut tks);
             }
             Err(e) => {
-                return Err(Error::new(e));
+                return ASTNode::ParseError(e.to_owned());
             }
         }
     }
     match input.parse::<f64>() {
-        Ok(num) => Ok(ASTNode::Number(num)),
-        _ => Ok(ASTNode::Text(input.to_owned())),
+        Ok(num) => ASTNode::Number(num),
+        _ => ASTNode::Text(input.to_owned()),
     }
 }
 
@@ -129,7 +130,7 @@ pub fn evaluate(n: ASTNode, ctx: &dyn EvalContext) -> String {
         EvalResult::Bool(b) => b.to_string(),
         EvalResult::NonNumeric(s) => s,
         EvalResult::List(_) => "".to_owned(),
-        EvalResult::Error(msg) => msg.to_owned(),
+        EvalResult::Error(msg) => "#VALUE!".to_owned(),
     }
 }
 
@@ -216,7 +217,7 @@ fn evaluate_internal(
             }
             match ctx.get_cell(cell_ref.row, cell_ref.col) {
                 Some(cell) => {
-                    let parsed_val = parse(&cell.value).unwrap();
+                    let parsed_val = parse(&cell.value);
                     let res = evaluate_internal(parsed_val, path, ctx);
                     path.pop();
                     res
@@ -224,6 +225,7 @@ fn evaluate_internal(
                 None => EvalResult::NonNumeric("".to_owned()),
             }
         }
+        ASTNode::ParseError(e) => EvalResult::Error(e),
         ASTNode::Range { start, mut stop } => {
             let mut results = vec![];
             if stop.is_unbounded() {
@@ -401,8 +403,11 @@ pub fn pratt_parse(tokens: &mut Vec<Token>, mbp: u8) -> Result<ASTNode, Error> {
     Ok(lhs)
 }
 
-pub fn parse_internal(tokens: &mut Vec<Token>) -> Result<ASTNode, Error> {
-    pratt_parse(tokens, 0)
+pub fn parse_internal(tokens: &mut Vec<Token>) -> ASTNode {
+    match pratt_parse(tokens, 0) {
+        Ok(n) => n,
+        Err(e) => ASTNode::ParseError(e.error_text.clone()),
+    }
 }
 
 pub fn get_operator(val: &str) -> Result<Operator, Error> {
