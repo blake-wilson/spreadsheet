@@ -269,15 +269,6 @@ pub fn infix_binding_power(op: char) -> Option<(u8, u8)> {
     }
 }
 
-pub fn binding_power(op: char) -> (u8, u8) {
-    match op {
-        '+' | '-' => (1, 2),
-        '*' | '/' => (3, 4),
-        '^' => (5, 6),
-        _ => panic!("unrecognized operator: {:?}", op),
-    }
-}
-
 fn peek(tokens: &Vec<Token>) -> Token {
     tokens.last().unwrap_or(&Token::Eof).clone()
 }
@@ -307,7 +298,7 @@ pub fn parse_cell_or_function(id: String, tokens: &mut Vec<Token>) -> Result<AST
                         advance(tokens);
                         break;
                     }
-                    t => panic!("unexpected token {:?}", t),
+                    t => return Err(Error::new(&format!("unexpected token {:?}", t))),
                 }
             }
             Ok(ASTNode::Function { name: id, args })
@@ -317,9 +308,12 @@ pub fn parse_cell_or_function(id: String, tokens: &mut Vec<Token>) -> Result<AST
             if let Token::Colon = peek(tokens) {
                 advance(tokens);
                 let right = match advance(tokens) {
-                    Token::ID(ref_val) => parse_cell_ref(ref_val).unwrap(),
-                    t => panic!("invalid cell reference after colon {:?}", t),
-                };
+                    Token::ID(ref_val) => parse_cell_ref(ref_val),
+                    t => Err(Error::new(&format!(
+                        "Could not parse value {:?} as cell reference",
+                        t
+                    ))),
+                }?;
                 Ok(ASTNode::Range {
                     start: left,
                     stop: right,
@@ -381,12 +375,18 @@ pub fn pratt_parse(tokens: &mut Vec<Token>, mbp: u8) -> Result<ASTNode, Error> {
                         advance(tokens);
                         let r_ref = pratt_parse(tokens, 0)?;
                         match r_ref {
-                            ASTNode::Ref(r) => ASTNode::Range { start: l, stop: r },
-                            t => panic!("unexpected token in range reference {:?}", t),
+                            ASTNode::Ref(r) => Ok(ASTNode::Range { start: l, stop: r }),
+                            t => Err(Error::new(&format!(
+                                "unexpected token in range reference {:?}",
+                                t
+                            ))),
                         }
                     }
-                    t => panic!("unexpected token in range reference {:?}", t),
-                },
+                    t => Err(Error::new(&format!(
+                        "unexpected token in range reference {:?}",
+                        t
+                    ))),
+                }?,
                 op => {
                     let rhs = pratt_parse(tokens, r_bp)?;
                     ASTNode::BinaryExpr {
