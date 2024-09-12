@@ -197,10 +197,16 @@ fn evaluate_internal(
             let mut eval_err: Option<String> = None;
             for arg in args {
                 let eval_res = evaluate_internal(*arg, path, ctx);
+                println!("eval res is {:?}", eval_res);
                 match eval_res {
                     EvalResult::List(results) => {
                         for res in results {
-                            evaluated_args.push(*res);
+                            match *res {
+                                EvalResult::Error(msg) => {
+                                    eval_err = Some(msg);
+                                }
+                                _ => evaluated_args.push(*res),
+                            }
                         }
                     }
                     EvalResult::Error(msg) => {
@@ -210,6 +216,7 @@ fn evaluate_internal(
                 }
             }
             if let Some(err_msg) = eval_err {
+                println!("eval error is {err_msg}");
                 EvalResult::Error(err_msg)
             } else {
                 evaluate_function(&name, evaluated_args)
