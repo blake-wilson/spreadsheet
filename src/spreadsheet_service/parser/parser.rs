@@ -5,13 +5,6 @@ use super::functions::*;
 use super::lexer::*;
 use std::cmp;
 
-enum Precedence {
-    PlusMinus = 2,
-    MultDiv = 3,
-    Exp = 4,
-    Prefix = 5,
-}
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Operator {
     Add,
