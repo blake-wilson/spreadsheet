@@ -16,9 +16,9 @@ impl CellLocation {
     pub fn to_range(&self) -> CellRange {
         CellRange {
             start_row: self.row,
-            stop_row: self.row + 1,
+            stop_row: self.row,
             start_col: self.col,
-            stop_col: self.col + 1,
+            stop_col: self.col,
         }
     }
 
@@ -60,9 +60,9 @@ impl Cell {
     pub fn to_range(&self) -> CellRange {
         CellRange {
             start_row: self.row,
-            stop_row: self.row + 1,
+            stop_row: self.row,
             start_col: self.col,
-            stop_col: self.col + 1,
+            stop_col: self.col,
         }
     }
 

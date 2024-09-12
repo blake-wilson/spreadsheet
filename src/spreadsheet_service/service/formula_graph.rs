@@ -1,6 +1,7 @@
 use super::super::models;
 use rstar::{Envelope, Point, PointDistance, RTree, RTreeObject, AABB};
 use std::collections::{HashMap, HashSet};
+use std::iter::FromIterator;
 
 pub struct FormulaGraph {
     rt: RTree<RTreeNode>,
@@ -17,7 +18,7 @@ struct RTreeNode {
 
 pub struct InsertResult {
     pub inserted_cells: Vec<models::CellLocation>,
-    pub circular: bool,
+    pub circular_cells: Vec<models::CellLocation>,
 }
 
 impl RTreeObject for RTreeNode {
@@ -178,37 +179,53 @@ impl FormulaGraph {
         }
 
         // Find all the dependents and update dependents map for the inserted cell
-        let existing = self.rt.locate_all_at_point(&cell.loc());
+        let mut existing: Vec<models::CellLocation> = self
+            .rt
+            .locate_all_at_point(&cell.loc())
+            .map(|e| e.cell)
+            .collect();
+        println!("initial dfs for {:?}", cell.loc());
+        println!("initial dependents are {:?}", existing);
 
-        for e in existing {
+        let res = self.cells_to_eval(cell.loc(), &existing);
+
+        for e in &existing {
             println!("found existing: {:?}", e);
-            if e.cell == cell.loc() {
+            if *e == cell.loc() {
                 continue;
             }
             (*self
                 .dependents_map
                 .entry(cell.to_range().clone())
                 .or_insert(HashSet::new()))
-            .insert(e.cell);
+            .insert(e.clone());
         }
 
-        self.cells_to_eval(&cell)
+        res
     }
 
     // cells_to_eval returns the list of cells which must be evaluated in order to evaluate
     // the provided cell's formula.
-    fn cells_to_eval(&self, cell: &models::Cell) -> InsertResult {
-        let mut stack = vec![];
+    fn cells_to_eval(
+        &self,
+        cell_loc: models::CellLocation,
+        dependents: &Vec<models::CellLocation>,
+    ) -> InsertResult {
         let mut visited_set = HashSet::new();
-        let mut circular = false;
+        let mut stack = vec![];
+        let mut circular = vec![];
+
+        println!("initial stack is {:?}", stack);
         self.dfs(
-            &cell.loc(),
+            &mut dependents.clone(),
             &mut stack,
             &mut visited_set,
-            &mut vec![cell.loc()],
+            &mut vec![cell_loc],
             &mut circular,
         );
         let mut ret = vec![];
+
+        println!("cell_to_eval stack is {:?}", stack);
         for s in stack.iter() {
             ret.push(models::CellLocation {
                 row: s.row,
@@ -216,50 +233,59 @@ impl FormulaGraph {
             });
         }
 
-        println!("insert complete. Circular? {:?}", circular);
-        if circular {
-            stack = visited_set.into_iter().collect();
+        println!(
+            "insert complete. Circular cells {:?} non-circular {:?}",
+            circular, stack
+        );
+        if !circular.contains(&cell_loc) {
+            ret.push(cell_loc);
         }
         InsertResult {
-            inserted_cells: stack.clone(),
-            circular,
+            inserted_cells: ret.clone(),
+            circular_cells: circular.clone(),
         }
     }
 
     fn dfs(
         &self,
-        cell: &models::CellLocation,
+        deps: &mut Vec<models::CellLocation>,
         stack: &mut Vec<models::CellLocation>,
         visited_set: &mut HashSet<models::CellLocation>,
         path: &mut Vec<models::CellLocation>,
-        circular: &mut bool,
+        circular: &mut Vec<models::CellLocation>,
     ) {
-        println!("get dependents for {:?}", cell);
-        let dependents = self.dependents_map.get_key_value(&cell.to_range().clone());
-        println!("dependents: {:?}", dependents);
-
-        match dependents {
-            Some((_, deps)) => {
-                println!("formula stack {:?}", stack);
-                for d in deps {
-                    if (&path).contains(d) {
-                        println!("path: {:?}", path);
-                        for c in path.iter() {
-                            println!("adding {:?} to circulars", c);
-                            visited_set.insert(c.clone());
-                        }
-                        *circular = true
-                    }
-                    path.push(d.clone());
-                    if !visited_set.contains(d) {
-                        self.dfs(&d, stack, visited_set, path, circular);
-                    }
-                    path.pop();
-                    visited_set.insert(d.clone());
-                    stack.push(d.clone());
-                }
+        println!("dfs dependents are {:?}", deps);
+        if deps.len() == 0 {
+            return;
+        }
+        for d in deps {
+            if circular.contains(d) {
+                continue;
             }
-            None => {}
+            if (&path).contains(d) {
+                println!("path: {:?}", path);
+                for c in path.iter() {
+                    println!("adding {:?} to circulars", c);
+                    circular.push(c.clone());
+                    visited_set.insert(c.clone());
+                }
+            } else {
+                path.push(d.clone());
+                println!("dfs for {:?}", d.to_range());
+                self.dfs(
+                    &mut match self.dependents_map.get(&d.to_range()) {
+                        Some(hs) => hs.clone().into_iter().collect(),
+                        None => vec![],
+                    },
+                    stack,
+                    visited_set,
+                    path,
+                    circular,
+                );
+            }
+            path.pop();
+            visited_set.insert(d.clone());
+            stack.push(d.clone());
         }
     }
 }

@@ -54,8 +54,8 @@ impl CellRef {
         CellRange {
             start_row: self.row,
             start_col: self.col,
-            stop_row: self.row + 1,
-            stop_col: self.col + 1,
+            stop_row: self.row,
+            stop_col: self.col,
         }
     }
 
@@ -130,7 +130,7 @@ pub fn evaluate(n: ASTNode, ctx: &dyn EvalContext) -> String {
         EvalResult::Bool(b) => b.to_string(),
         EvalResult::NonNumeric(s) => s,
         EvalResult::List(_) => "".to_owned(),
-        EvalResult::Error(msg) => "#VALUE!".to_owned(),
+        EvalResult::Error(msg) => msg.to_owned(),
     }
 }
 
@@ -194,6 +194,7 @@ fn evaluate_internal(
         }
         ASTNode::Function { name, args } => {
             let mut evaluated_args = vec![];
+            let mut eval_err: Option<String> = None;
             for arg in args {
                 let eval_res = evaluate_internal(*arg, path, ctx);
                 match eval_res {
@@ -202,10 +203,17 @@ fn evaluate_internal(
                             evaluated_args.push(*res);
                         }
                     }
+                    EvalResult::Error(msg) => {
+                        eval_err = Some(msg);
+                    }
                     _ => evaluated_args.push(eval_res),
                 }
             }
-            evaluate_function(&name, evaluated_args)
+            if let Some(err_msg) = eval_err {
+                EvalResult::Error(err_msg)
+            } else {
+                evaluate_function(&name, evaluated_args)
+            }
         }
         ASTNode::Ref(cell_ref) => {
             if path.contains(&cell_ref.loc()) {

@@ -61,41 +61,27 @@ impl CellsService for MemoryCellsService {
             let mut refs = parser::get_refs(&formula);
             refs.iter_mut().for_each(|r| (*r).clamp(self.num_rows));
             let mut insert_res = self.formula_graph.insert_cell(cc.clone(), refs);
-            if !insert_res.circular {
-                while let Some(c) = insert_res.inserted_cells.pop() {
-                    // We don't need to check refs again here since the formula graph already computed
-                    // all the required re-evals.
-                    let mut eval_cell = self.get_cell(c.row, c.col).unwrap().clone();
-                    let formula = parser::parse(&eval_cell.value);
-                    let display_value = parser::evaluate(formula, self);
-                    eval_cell.display_value = display_value;
-                    self.set_cell(&eval_cell);
-                    ret_cells.push(eval_cell);
-                }
+
+            while let Some(c) = insert_res.inserted_cells.pop() {
+                // We don't need to check refs again here since the formula graph already computed
+                // all the required re-evals.
+                let mut eval_cell = self.get_cell(c.row, c.col).unwrap().clone();
+                let formula = parser::parse(&eval_cell.value);
                 let display_value = parser::evaluate(formula, self);
-                if display_value != cc.display_value {
-                    cc.display_value = display_value;
+                eval_cell.display_value = display_value;
+                self.set_cell(&eval_cell);
+                ret_cells.push(eval_cell);
+            }
+
+            while let Some(c) = insert_res.circular_cells.pop() {
+                println!("circular cell {:?} \n", c);
+                let display_value = "#CIRCULAR!".to_owned();
+                let mut eval_cell = self.get_cell(c.row, c.col).unwrap().clone();
+                if eval_cell.is_formula() {
+                    eval_cell.display_value = display_value;
                 }
-                self.set_cell(&cc);
-                ret_cells.push(cc);
-            } else {
-                while let Some(c) = insert_res.inserted_cells.pop() {
-                    println!("circular cell\n");
-                    let display_value = "#CIRCULAR!".to_owned();
-                    let mut eval_cell = self.get_cell(c.row, c.col).unwrap().clone();
-                    if eval_cell.is_formula() {
-                        eval_cell.display_value = display_value;
-                    }
-                    self.set_cell(&eval_cell);
-                    ret_cells.push(eval_cell);
-                }
-                if !cc.is_formula() {
-                    cc.display_value = cc.value.clone();
-                } else {
-                    cc.display_value = "#CIRCULAR!".to_owned();
-                }
-                self.set_cell(&cc);
-                ret_cells.push(cc);
+                self.set_cell(&eval_cell);
+                ret_cells.push(eval_cell);
             }
         }
         Ok(ret_cells)
