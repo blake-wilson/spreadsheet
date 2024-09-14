@@ -188,24 +188,26 @@ fn evaluate_internal(
         ASTNode::Function { name, args } => {
             let mut evaluated_args = vec![];
             let mut eval_err: Option<String> = None;
+            let mut arg_filter = |e: EvalResult| match e {
+                EvalResult::Error(msg) => {
+                    // #VALUE! errors can often be safely ignored
+                    // by functions
+                    if msg != "#VALUE!" {
+                        eval_err = Some(msg)
+                    }
+                }
+                _ => evaluated_args.push(e),
+            };
             for arg in args {
                 let eval_res = evaluate_internal(*arg, path, ctx);
                 println!("eval res is {:?}", eval_res);
                 match eval_res {
                     EvalResult::List(results) => {
                         for res in results {
-                            match *res {
-                                EvalResult::Error(msg) => {
-                                    eval_err = Some(msg);
-                                }
-                                _ => evaluated_args.push(*res),
-                            }
+                            arg_filter(*res);
                         }
                     }
-                    EvalResult::Error(msg) => {
-                        eval_err = Some(msg);
-                    }
-                    _ => evaluated_args.push(eval_res),
+                    res => arg_filter(res),
                 }
             }
             if let Some(err_msg) = eval_err {
@@ -414,7 +416,7 @@ pub fn pratt_parse(tokens: &mut Vec<Token>, mbp: u8) -> Result<ASTNode, Error> {
 pub fn parse_internal(tokens: &mut Vec<Token>) -> ASTNode {
     match pratt_parse(tokens, 0) {
         Ok(n) => n,
-        Err(e) => ASTNode::ParseError(e.error_text.clone()),
+        Err(_) => ASTNode::ParseError("#VALUE!".to_owned()),
     }
 }
 
