@@ -340,7 +340,11 @@ pub fn pratt_parse(tokens: &mut Vec<Token>, mbp: u8) -> Result<ASTNode, Error> {
     let mut lhs = match advance(tokens) {
         Token::Op('(') => {
             let lhs = pratt_parse(tokens, 0);
-            // assert_eq!(advance(tokens), Token::Op(')'));
+            let next = advance(tokens);
+            if next != Token::Op(')') {
+                return Err(Error::new("expected closing parentheses after expression"));
+            }
+            println!("tokens are now {:?}", tokens);
             lhs
         }
         Token::Op(c) => {
