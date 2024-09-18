@@ -54,7 +54,12 @@ impl CellsService for MemoryCellsService {
 
         // Recalculate after inserting values for all cells
         for c in cells {
-            let mut cc = self.get_cell(c.row, c.col).unwrap();
+            let cc = self.get_cell(c.row, c.col).unwrap_or_else(|| models::Cell {
+                row: c.row,
+                col: c.col,
+                value: "".to_owned(),
+                display_value: "".to_owned(),
+            });
 
             // Update the formula graph and recompute necessary cells
             let formula = parser::parse(&cc.value);

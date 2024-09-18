@@ -25,14 +25,6 @@ pub fn lex(input: &str) -> Result<Vec<Token>, &'static str> {
                 let num = lex_number(&mut it);
                 num
             }
-            '(' => {
-                it.next();
-                Ok(Token::Op('('))
-            }
-            ')' => {
-                it.next();
-                Ok(Token::Op(')'))
-            }
             '"' => {
                 it.next();
                 let mut str_val = "".to_string();
@@ -56,7 +48,7 @@ pub fn lex(input: &str) -> Result<Vec<Token>, &'static str> {
                 it.next();
                 Ok(Token::Comma)
             }
-            '*' | '+' | '-' | '/' => {
+            '*' | '+' | '-' | '/' | ')' | '(' => {
                 it.next();
                 Ok(Token::Op(c))
             }

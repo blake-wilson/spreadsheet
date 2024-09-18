@@ -372,12 +372,6 @@ pub fn pratt_parse(tokens: &mut Vec<Token>, mbp: u8) -> Result<ASTNode, Error> {
             Token::Op(op) => Ok(op),
             t => Err(Error::new(&format!("unexpected token {:?}", t))),
         }?;
-        // if let Some((l_bp, _)) = postfix_binding_power(op) {
-        //     if l_bp < mbp {
-        //         break;
-        //     }
-        //     advance(tokens);
-        // }
         if let Some((l_bp, r_bp)) = infix_binding_power(op) {
             if l_bp < mbp {
                 break;
